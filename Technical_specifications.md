@@ -2,42 +2,45 @@ Technical specifications - project ArtyWeather
 ======================================
 
 # 1. Общая идея проекта
-ArtyWeather — веб-приложение (PET-проект) для получения практического опыта разработки.
+**ArtyWeather** — веб-приложение (PET-проект) для анализа погодных данных и их осмысленного отображения с использованием AI.
 
 ## Основная идея:
-* Получение погодных данных через бесплатный API (Open-Meteo)
+* Получение погодных данных через Open-Meteo
 * Сохранение данных в БД
-* Отображение: графиков давления, трендов, простых карт с циклонами и антициклонами
-* Генерация текстового summary через ИИ (описание погоды, рекомендации по одежде)
+* Генерация AI-интерпретации полученных данных
+* Визуализация: графиков давления, текущих погодных данных, карты местности
 
 ## Проект должен демонстрировать:
 * работу с внешним API
-* нормализацию данных
+* архитектуру Laravel-приложения
 * очереди и scheduler
 * визуализацию данных
-* интеграцию LLM
+* интеграцию AI через Laravel AI SDK
 
 # 2. Цели и ограничения
 ## Цель:
-* Освоение полного цикла разработки
-* Создание портфолио-проекта (GitHub repository)
+* Освоение стека технологий
+* Работа с AI SDK
+* Создание портфолио-проекта
 
 ## Ограничения:
-* Использование бесплатных API
-* Минимальные инфраструктурные затраты
-* Open-source инструменты
+* Бесплатные API
+* Минимальная инфраструктура
 
 # 3. Стек технологий
 ## Backend:
-* Laravel 11
-* cron (через Laravel Scheduler)
-* PostgreSQL,
+* Laravel 13
+* Laravel Scheduler
+* Laravel Queue (Redis)
+* PostgreSQL / MySQL
 * Open-Meteo API
-* API от OpenAI (модель уровня GPT-4o-mini или аналог)
+* Laravel AI SDK
 
 ## Frontend:
 * Vue.js 3
+* Inertia.js
 * Chart.js
+* Leaflet
 * TailwindCSS
 
 ## Инфраструктура:
@@ -70,40 +73,27 @@ ArtyWeather — веб-приложение (PET-проект) для получ
 Роль: Асинхронная обработка, Изоляция долгих операций
 
 ### 3. Domain Layer (чистая логика без Laravel-зависимостей)
-PressureAnalyzer(app/Domain/Weather/PressureAnalyzer.php)
+PressureAnalyzer
 
-### 4. Infrastructure Layer (всё, что связано с внешним миром)
-   * HTTP Client (Illuminate\Support\Facades\Http, app/Infrastructure/Weather/OpenMeteoClient.php)
-   * AI Service (app/Infrastructure/AI/AiWeatherSummaryService.php)
+### 4. Infrastructure Layer
+   * OpenMeteoClient
+   * AI SDK
 
-### 5. Presentation Layer
+### 5.Persistence Layer
    * Models (Eloquent), app/Models/WeatherSnapshot.php
    * Migrations, database/migrations
 
-### 6. Scheduler (routes/console.php),
-   Laravel сущности: Schedule, schedule:run, cron (вне Laravel).
-
-## Основные компоненты:
-
-* HTTP Client → запрос к Open-Meteo
-* WeatherNormalizer → нормализация ответа API
-* WeatherService → бизнес-логика
-* PressureAnalyzer → определение циклон / антициклон
-* AiWeatherSummaryService → генерация текста
-* Scheduler → периодический сбор данных
-* Queue → асинхронная обработка AI
-
 ## Полная схема взаимодействия:
-cron ->
-schedule:run ->
+Scheduler ->
 CollectWeatherJob ->
 WeatherService ->
-(OpenMeteoClient → External API) ->
+OpenMeteoClient ->
 WeatherNormalizer ->
 PressureAnalyzer ->
-WeatherSnapshot::create() ->
-GenerateSummaryJob ->
-(AiWeatherSummaryService → OpenAI) ->
+GenerateInsightJob ->
+WeatherInsightService ->
+Laravel AI SDK ->
+AI Provider ->
 weather_summaries
 
 # 5. Модель данных (таблицы)
@@ -113,6 +103,8 @@ weather_summaries
 * name;
 * email;
 * password;
+* latitude;
+* longitude;
 * locale;
 * theme.
 
@@ -121,9 +113,9 @@ weather_summaries
 * user_id;
 * latitude;
 * longitude;
+* temperature;
 * pressure;
 * wind_speed;
-* temperature;
 * collected_at;
 * system_type (cyclone / anticyclone / neutral).
 
@@ -131,6 +123,11 @@ weather_summaries
 * id;
 * snapshot_id;
 * summary_text;
+* clothing_advice;
+* risk_level;
+* system_explanation;
+* provider;
+* model;
 * created_at.
 
 # 6. Роли и права доступа
@@ -143,18 +140,14 @@ weather_summaries
 
 # 7. API
 
-## Weather API (Open-Meteo)
-User может настраивать:
-* координаты;
-* частоту обновления;
-* параметры запроса (давление, ветер, температура).
+## GET /api/weather
+текущие данные
+## GET /api/weather/history
+история
+## POST /api/weather/refresh
+запуск обновления
 
-## AI API (OpenAI)
-Назначение:
-* генерация краткого summary;
-* рекомендации по погоде.
-
-# 8. Логика бизнес-процессов
+# 8. Бизнес-логика
 
 # Основные процессы:
 
@@ -165,15 +158,13 @@ User может настраивать:
    * выбор локали.
 
 ## 2. Сбор данных:
-   * Scheduler запускает сбор;
+   * Scheduler запускает Job;
    * Данные сохраняются;
-   * Анализируется давление;
-   * Определяется тип системы.
 
 ## 3. Генерация AI summary:
    * Запускается Job;
+   * PressureAnalyzer определяет: cyclone, anticyclone, neutral;
    * Отправляется агрегированная информация;
-   * Сохраняется текст.
 
 ## 4. Просмотр:
    User видит:
@@ -186,6 +177,8 @@ User может настраивать:
 
 ## Login ->
 
+## логотип ArtyWeather
+
 ## Header top menu (закрепленное вверху  справа меню):
 * Кнопка Log out (выход из авторизации)
 * Locale (переключатель локали)
@@ -194,8 +187,15 @@ User может настраивать:
 ## Header picture (тематический рисунок на весь хедер)
 
 ## Header bottom menu (между Header picture и основным окном приложения):
-* Вкладка Weather (открываеться по дефолту, отображение настроенных через Dashboard данных, графики Chart.js? , текстовое summary от ИИ)
-* Dashboard (настройка запросов данных и параметров).
+
+### Вкладка Weather: 
+* Блок 1 — Current Weather (город, температура, давление, ветер)
+* Блок 2 — Pressure Chart (график давления)
+* Блок 3 — System (cyclone / anticyclone, визуальный индикатор)
+* Блок 4 — AI Summary (summary, clothing advice, risk level)
+* Блок 5 — Map (одна точка (пользователь), тип системы)
+
+### Вкладка Dashboard (координаты, частота обновления, включение AI).
 
 ## Основное окно приложения (отображение вкладок Weather и Dashboard)
 
@@ -203,29 +203,30 @@ User может настраивать:
 
 # 10. Нефункциональные требования:
 
-* Авторизация через Sanctum
-* CSRF защита
+* Sanctum auth
+* CSRF
 * Валидация входящих данных
 * Обработка ошибок API
+* Retry для AI
+* Логирование
+* Кеширование
+* Возможность смены AI provider
 * Локализация (минимум 2 языка)
 * Поддержка темной темы
-* Retry для AI-запросов
 
 # 11. План итераций разработки
 
 ## Итерация 1 — Подготовка окружения
 
-* Установка Laravel
-* Настройка Sail (Docker)
+* Установка Laravel 13 + Sail
 * Подключение PostgreSQL
 * Настройка Sanctum
-* Базовая авторизация
-* Настройка Git
+
 ### Результат: Рабочий backend с авторизацией.
 
 ## Итерация 2 — Интеграция Weather API:
 
-* Реализация OpenMeteoClient
+* OpenMeteoClient
 * Создание WeatherService
 * Создание миграций
 * Сохранение snapshot
@@ -236,44 +237,52 @@ User может настраивать:
 * Реализация PressureAnalyzer
 * Определение типа системы
 * Добавление поля system_type
-* Unit-тесты
-### Результат: Определяется cyclone / anticyclone.
+
+### Результат: Определяется типы систем
 
 ## Итерация 4 — Scheduler и очереди
 
 * Настройка schedule:run
 * Реализация CollectWeatherJob
 * Настройка Redis
-* Логирование ошибок
-### Результат: Автоматический сбор данных.
+
+### Результат: Автоматический сбор данных
 
 ## Итерация 5 — Frontend базовый
 
-* Установка Vue 3
+* Установка Vue + Inertia
 * Настройка роутинга
 * Реализация страницы Weather
 * Подключение Chart.js
 * Отображение графика давления
-### Результат: Видимый график данных.
+### Результат: базовый UI
 
 ## Итерация 6 — Карта
 
 * Подключение Leaflet
 * Отображение координат
 * Маркер cyclone / anticyclone
-* Popup с информацией
-### Результат: Простейшая карта с системами давления.
 
-## Итерация 7 — AI-интеграция
+### Результат: визуализация систем
 
-* Реализация AiWeatherSummaryService
-* Создание Job
-* Отправка агрегированных данных в OpenAI
-* Сохранение summary
-* Отображение в интерфейсе
-### Результат: AI генерирует текст.
+## Итерация 7 — AI SDK
 
-## Итерация 8 — Полировка
+* Установка Laravel AI SDK
+* Настройка provider
+* WeatherInsightService
+* GenerateInsightJob
+* structured output
+### Результат: AI работает
+
+## Итерация 8 — AI UX
+
+* clothing advice
+* risk level
+* отображение карточек
+
+### Результат: полноценный AI-блок
+
+## Итерация 9 — Полировка
 
 * Локализация
 * Темная тема
@@ -281,4 +290,4 @@ User может настраивать:
 * Обработка ошибок
 * Документация README
 * Скриншоты проекта
-### Результат: Готовый PET-проект для портфолио.
+### Результат: Готовый PET-проект

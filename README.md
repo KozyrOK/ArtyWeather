@@ -7,4 +7,4 @@
 ### Technical specifications: <a href="./Technical_specifications.md">🇺🇦 Русский</a>
 
 #
-![ArtyWeather](./assets/artyweather-logo.webp)
+![ArtyWeather](./assets/logo.png)

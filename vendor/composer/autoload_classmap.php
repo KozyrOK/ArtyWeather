@@ -6,8 +6,15 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Http\\Controllers\\Api\\Auth\\AuthenticatedUserController' => $baseDir . '/app/Http/Controllers/Api/Auth/AuthenticatedUserController.php',
+    'App\\Http\\Controllers\\Api\\WeatherSettingController' => $baseDir . '/app/Http/Controllers/Api/WeatherSettingController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
+    'App\\Http\\Requests\\Auth\\LoginRequest' => $baseDir . '/app/Http/Requests/Auth/LoginRequest.php',
+    'App\\Http\\Requests\\Auth\\RegisterRequest' => $baseDir . '/app/Http/Requests/Auth/RegisterRequest.php',
+    'App\\Http\\Requests\\UpdateWeatherSettingsRequest' => $baseDir . '/app/Http/Requests/UpdateWeatherSettingsRequest.php',
+    'App\\Http\\Resources\\WeatherSettingResource' => $baseDir . '/app/Http/Resources/WeatherSettingResource.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
+    'App\\Models\\WeatherSetting' => $baseDir . '/app/Models/WeatherSetting.php',
     'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',

@@ -554,8 +554,15 @@ class ComposerStaticInitcda2add6397422fb1a2eb5b9207f1575
     );
 
     public static $classMap = array (
+        'App\\Http\\Controllers\\Api\\Auth\\AuthenticatedUserController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/Auth/AuthenticatedUserController.php',
+        'App\\Http\\Controllers\\Api\\WeatherSettingController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/WeatherSettingController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Http\\Requests\\Auth\\LoginRequest' => __DIR__ . '/../..' . '/app/Http/Requests/Auth/LoginRequest.php',
+        'App\\Http\\Requests\\Auth\\RegisterRequest' => __DIR__ . '/../..' . '/app/Http/Requests/Auth/RegisterRequest.php',
+        'App\\Http\\Requests\\UpdateWeatherSettingsRequest' => __DIR__ . '/../..' . '/app/Http/Requests/UpdateWeatherSettingsRequest.php',
+        'App\\Http\\Resources\\WeatherSettingResource' => __DIR__ . '/../..' . '/app/Http/Resources/WeatherSettingResource.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
+        'App\\Models\\WeatherSetting' => __DIR__ . '/../..' . '/app/Models/WeatherSetting.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Brick\\Math\\BigDecimal' => __DIR__ . '/..' . '/brick/math/src/BigDecimal.php',

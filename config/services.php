@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'open_meteo' => [
+        'base_url' => env('OPEN_METEO_BASE_URL', 'https://api.open-meteo.com/v1/forecast'),
+        'timeout' => env('OPEN_METEO_TIMEOUT', 5),
+        'retry_times' => env('OPEN_METEO_RETRY_TIMES', 2),
+        'retry_sleep' => env('OPEN_METEO_RETRY_SLEEP', 200),
+    ],
+
 ];

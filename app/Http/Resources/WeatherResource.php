@@ -16,6 +16,10 @@ class WeatherResource extends JsonResource
             'snapshot' => $this->snapshot->toArray(),
             'weather_condition' => $this->condition->value,
             'display' => $this->display,
+            'cache' => [
+                'status' => $this->cacheStatus,
+                'key' => $this->cacheKey,
+            ],
         ];
     }
 }

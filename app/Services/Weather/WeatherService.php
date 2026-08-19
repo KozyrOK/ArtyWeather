@@ -6,13 +6,20 @@ use App\DTO\Weather\WeatherSnapshot;
 use App\Infrastructure\Weather\OpenMeteoClient;
 use App\Models\User;
 use App\Models\WeatherSetting;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
 final readonly class WeatherService
 {
+    private const CACHE_HIT = 'HIT';
+
+    private const CACHE_MISS = 'MISS';
+
     public function __construct(
         private OpenMeteoClient $client,
         private WeatherNormalizer $normalizer,
         private WeatherConditionResolver $conditionResolver,
+        private CacheRepository $cache,
+        private WeatherCacheKey $cacheKey,
     ) {}
 
     public function currentFor(User $user): WeatherReport
@@ -22,17 +29,53 @@ final readonly class WeatherService
 
     public function refreshFor(User $user): WeatherReport
     {
-        return $this->fetch($user);
+        return $this->fetch($user, refresh: true);
     }
 
-    private function fetch(User $user): WeatherReport
+     private function fetch(User $user, bool $refresh = false): WeatherReport
     {
         $settings = $user->weatherSetting()->firstOrCreate([], WeatherSetting::defaults());
-        $payload = $this->client->forecast((float) $settings->latitude, (float) $settings->longitude, $settings->forecast_period);
-        $snapshot = $this->normalizer->normalize($payload);
+        $key = $this->cacheKey->forSettings($settings);
+
+        if ($refresh) {
+            $this->cache->forget($key);
+        }
+
+        $snapshot = $this->cache->get($key);
+        $cacheStatus = self::CACHE_HIT;
+
+        if (! $snapshot instanceof WeatherSnapshot) {
+            $cacheStatus = self::CACHE_MISS;
+            $snapshot = $this->freshSnapshot($settings);
+            $this->cache->put($key, $snapshot, $this->ttl());
+        }
+
         $condition = $this->conditionResolver->resolve($snapshot);
 
-        return new WeatherReport($snapshot, $condition, $this->displayData($snapshot, $settings));
+        return new WeatherReport(
+            $snapshot,
+            $condition,
+            $this->displayData($snapshot, $settings),
+            $cacheStatus,
+            $key,
+        );
+    
+    }
+
+    private function freshSnapshot(WeatherSetting $settings): WeatherSnapshot
+    {
+        $payload = $this->client->forecast(
+            (float) $settings->latitude,
+            (float) $settings->longitude,
+            (int) $settings->forecast_period,
+        );
+
+        return $this->normalizer->normalize($payload);
+    }
+
+    private function ttl(): int
+    {
+        return max(1, (int) config('services.weather_cache.ttl', 900));
     }
 
     /** @return array<string, mixed> */

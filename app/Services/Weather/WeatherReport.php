@@ -12,5 +12,7 @@ final readonly class WeatherReport
         public WeatherSnapshot $snapshot,
         public WeatherCondition $condition,
         public array $display,
+        public string $cacheStatus,
+        public string $cacheKey,
     ) {}
 }

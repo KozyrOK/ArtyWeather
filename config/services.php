@@ -42,4 +42,8 @@ return [
         'retry_sleep' => env('OPEN_METEO_RETRY_SLEEP', 200),
     ],
 
+    'weather_cache' => [
+        'ttl' => env('WEATHER_CACHE_TTL', 900),
+    ],
+
 ];

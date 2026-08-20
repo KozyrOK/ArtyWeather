@@ -20,6 +20,8 @@ final readonly class WeatherSnapshot
         public float $windSpeed,
         public int $windDirection,
         public float $windGusts,
+        /** @var array<int, array<string, mixed>> */
+        public array $forecast = [],
     ) {}
 
     /** @return array<string, mixed> */
@@ -39,6 +41,7 @@ final readonly class WeatherSnapshot
             'wind_speed' => $this->windSpeed,
             'wind_direction' => $this->windDirection,
             'wind_gusts' => $this->windGusts,
+            'forecast' => $this->forecast,
         ];
     }
 }

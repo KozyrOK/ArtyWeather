@@ -1,9 +1,32 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-}
+:root { color: #172033; background: #eef6ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+body { margin: 0; min-height: 100vh; }
+button, input, select { border-radius: .8rem; border: 1px solid #cbd5e1; padding: .65rem .8rem; }
+button { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
+.app-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); background: rgba(255,255,255,.82); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
+.brand, .header-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.brand img { width: 48px; height: 48px; object-fit: contain; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1.25rem; padding: 1.25rem clamp(1rem, 4vw, 3rem); }
+.overview { display: grid; gap: 1.25rem; }
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.card { background: rgba(255,255,255,.9); border: 1px solid rgba(148,163,184,.35); border-radius: 1.25rem; box-shadow: 0 20px 60px rgba(15,23,42,.08); padding: 1.25rem; }
+.hero { display: grid; grid-template-columns: 1fr auto; gap: 1rem; }
+.hero h1 { font-size: clamp(2.5rem, 8vw, 5rem); margin: 0; }
+.weather-icon { width: 96px; height: 96px; object-fit: contain; }
+.metrics, .forecast-grid, .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; }
+.metrics div, .forecast-grid article { background: #f8fafc; border-radius: 1rem; padding: .8rem; }
+.metrics span { display: block; color: #64748b; font-size: .85rem; }
+.landscape { min-height: 320px; overflow: hidden; position: relative; display: flex; align-items: end; color: white; }
+.landscape img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.landscape div { position: relative; z-index: 1; text-shadow: 0 2px 8px #000; }
+.chart-card { height: 320px; min-width: 0; }
+.dashboard { align-self: start; position: sticky; top: 6rem; }
+.dashboard form, .dashboard fieldset { display: grid; gap: .8rem; }
+.dashboard label:not(.check) { display: grid; gap: .35rem; font-weight: 700; }
+.check { display: block; font-weight: 500; }
+.state { padding: 2rem; text-align: center; }
+.error { color: #b91c1c; }
+.refresh { justify-self: start; }
+@media (max-width: 1050px) { .layout, .overview-grid { grid-template-columns: 1fr; } .dashboard { position: static; } }
+@media (max-width: 640px) { .app-header, .header-actions, .hero { display: grid; grid-template-columns: 1fr; } .weather-icon { width: 72px; height: 72px; } }

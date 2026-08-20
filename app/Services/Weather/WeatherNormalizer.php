@@ -32,7 +32,63 @@ final class WeatherNormalizer
             windSpeed: $this->float($current, 'wind_speed_10m'),
             windDirection: $this->int($current, 'wind_direction_10m'),
             windGusts: $this->float($current, 'wind_gusts_10m'),
+            forecast: $this->forecast($payload),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<int, array<string, mixed>>
+     */
+    private function forecast(array $payload): array
+    {
+        $hourly = Arr::get($payload, 'hourly');
+
+        if (! is_array($hourly) || ! isset($hourly['time']) || ! is_array($hourly['time'])) {
+            return [];
+        }
+
+        $forecast = [];
+
+        foreach ($hourly['time'] as $index => $time) {
+            if (! is_string($time) || $time === '') {
+                continue;
+            }
+
+            $forecast[] = [
+                'timestamp' => (new DateTimeImmutable($time))->format(DATE_ATOM),
+                'temperature' => $this->nullableFloatAt($hourly, 'temperature_2m', $index),
+                'apparent_temperature' => $this->nullableFloatAt($hourly, 'apparent_temperature', $index),
+                'relative_humidity' => $this->nullableIntAt($hourly, 'relative_humidity_2m', $index),
+                'precipitation' => $this->nullableFloatAt($hourly, 'precipitation', $index),
+                'weather_code' => $this->nullableIntAt($hourly, 'weather_code', $index),
+                'cloud_cover' => $this->nullableIntAt($hourly, 'cloud_cover', $index),
+                'pressure' => $this->nullableFloatAt($hourly, 'surface_pressure', $index),
+                'wind_speed' => $this->nullableFloatAt($hourly, 'wind_speed_10m', $index),
+                'wind_direction' => $this->nullableIntAt($hourly, 'wind_direction_10m', $index),
+                'wind_gusts' => $this->nullableFloatAt($hourly, 'wind_gusts_10m', $index),
+            ];
+        }
+
+        return $forecast;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function nullableFloatAt(array $data, string $key, int $index): ?float
+    {
+        $values = $data[$key] ?? null;
+        $value = is_array($values) ? ($values[$index] ?? null) : null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function nullableIntAt(array $data, string $key, int $index): ?int
+    {
+        $values = $data[$key] ?? null;
+        $value = is_array($values) ? ($values[$index] ?? null) : null;
+
+        return is_numeric($value) ? (int) $value : null;
     }
 
     /** @param array<string, mixed> $data */

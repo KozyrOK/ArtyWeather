@@ -9,7 +9,7 @@ use RuntimeException;
 
 final readonly class OpenMeteoClient
 {
-    private const CURRENT_VARIABLES = [
+    private const WEATHER_VARIABLES = [
         'temperature_2m',
         'apparent_temperature',
         'relative_humidity_2m',
@@ -39,7 +39,8 @@ final readonly class OpenMeteoClient
                     'latitude' => $latitude,
                     'longitude' => $longitude,
                     'forecast_days' => $forecastPeriod,
-                    'current' => implode(',', self::CURRENT_VARIABLES),
+                    'current' => implode(',', self::WEATHER_VARIABLES),
+                    'hourly' => implode(',', self::WEATHER_VARIABLES),
                     'timezone' => 'UTC',
                 ]);
         } catch (ConnectionException $exception) {

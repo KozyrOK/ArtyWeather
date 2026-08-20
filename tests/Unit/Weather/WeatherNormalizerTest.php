@@ -30,5 +30,6 @@ class WeatherNormalizerTest extends TestCase
         $this->assertSame(21.4, $snapshot->temperature);
         $this->assertSame(61, $snapshot->weatherCode);
         $this->assertSame('2026-08-17T12:00:00+00:00', $snapshot->timestamp->format(DATE_ATOM));
+        $this->assertSame([], $snapshot->forecast);
     }
 }

@@ -32,6 +32,7 @@ class WeatherApiTest extends TestCase
             ->assertJsonPath('data.snapshot.temperature', 18.6)
             ->assertJsonPath('data.weather_condition', 'RAIN')
             ->assertJsonPath('data.display.temperature', 18.6)
+            ->assertJsonPath('data.snapshot.forecast.0.temperature', 18.6)
             ->assertJsonMissingPath('data.display.wind_speed');
 
         Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://api.open-meteo.com/v1/forecast')
@@ -39,7 +40,8 @@ class WeatherApiTest extends TestCase
             && $request['longitude'] === 37.61722
             && $request['forecast_days'] === 7
             && str_contains($request['current'], 'temperature_2m')
-            && str_contains($request['current'], 'wind_speed_10m'));
+            && str_contains($request['current'], 'wind_speed_10m')
+            && str_contains($request['hourly'], 'wind_speed_10m'));
     }
 
     public function test_authenticated_user_can_refresh_weather(): void
@@ -85,6 +87,19 @@ class WeatherApiTest extends TestCase
                 'wind_direction_10m' => 210,
                 'wind_gusts_10m' => 16.8,
             ], $overrides),
+            'hourly' => [
+                'time' => ['2026-08-17T12:00', '2026-08-17T13:00'],
+                'temperature_2m' => [18.6, 19.1],
+                'apparent_temperature' => [17.9, 18.5],
+                'relative_humidity_2m' => [74, 72],
+                'precipitation' => [1.2, 0.7],
+                'weather_code' => [61, 61],
+                'cloud_cover' => [88, 84],
+                'surface_pressure' => [1002.4, 1002.1],
+                'wind_speed_10m' => [9.3, 9.8],
+                'wind_direction_10m' => [210, 215],
+                'wind_gusts_10m' => [16.8, 17.2],
+            ],
         ];
     }
 }

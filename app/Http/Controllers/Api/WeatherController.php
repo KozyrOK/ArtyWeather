@@ -14,20 +14,22 @@ use Illuminate\Http\Request;
  
 class WeatherController extends Controller
 {
-     public function show(Request $request, WeatherService $weatherService): JsonResponse
-     {
-         return WeatherResource::make($weatherService->currentFor($request->user()))->response()->setStatusCode(200);
-     }
- 
-     public function refresh(Request $request, WeatherService $weatherService): JsonResponse
-     {
-         return WeatherResource::make($weatherService->refreshFor($request->user()))->response()->setStatusCode(200);
-     }
+    public function show(Request $request, WeatherService $weatherService): JsonResponse
+    {
+        return WeatherResource::make($weatherService->currentFor($request->user()))->response()->setStatusCode(200);
+    }
+
+    public function refresh(Request $request, WeatherService $weatherService): JsonResponse
+    {
+        return WeatherResource::make($weatherService->refreshFor($request->user()))->response()->setStatusCode(200);
+    }    
 
     public function presentation(Request $request, WeatherService $weatherService, AiWeatherPresentationService $presentations): JsonResponse
     {
-        $report = $weatherService->currentFor($request->user());
-        $locale = $request->getPreferredLanguage(['ru', 'en']) ?? 'ru';
+        $report = $weatherService->currentFor($request->user());        
+         $locale = in_array($request->user()->locale, ['en', 'ru'], true)
+            ? $request->user()->locale
+            : ($request->getPreferredLanguage(['en', 'ru']) ?? 'en');
         $presentation = $presentations->cached($report->snapshot, $report->condition, $locale);
 
         if ($presentation !== null) {

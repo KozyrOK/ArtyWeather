@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { landscapeMap, weatherIconMap } from '../assets/weatherAssets';
 
-const props = defineProps({ presentation: Object, loading: Boolean });
+const props = defineProps({ presentation: Object, loading: Boolean, t: Object });
 
 const data = computed(() => props.presentation?.presentation ?? props.presentation?.fallback ?? null);
 const status = computed(() => props.presentation?.status ?? 'processing');
@@ -17,14 +17,14 @@ const landscape = computed(() => landscapeMap[data.value?.landscape]);
       <img v-if="icon" :src="icon" :alt="data?.weather_icon" class="ai-presentation__icon">
     </div>
     <div>
-      <p class="eyebrow">AI Presentation</p>
-      <h2>{{ status === 'ready' ? 'Ready' : 'Processing' }}</h2>
-      <p v-if="loading">Loading presentation…</p>
+      <p class="eyebrow">{{ t.aiPresentation }}</p>
+      <h2>{{ status === 'ready' ? t.ready : t.processing }}</h2>
+      <p v-if="loading">{{ t.loadingPresentation }}</p>
       <template v-else-if="data">
         <p>{{ data.summary }}</p>
         <strong>{{ data.recommendation }}</strong>
       </template>
-      <p v-else>Presentation is being generated. Weather facts remain available.</p>
+      <p v-else>{{ t.presentationFallback }}</p>
     </div>
   </section>
 </template>

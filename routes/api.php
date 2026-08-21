@@ -5,10 +5,10 @@ use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\WeatherSettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/auth/register', [AuthenticatedUserController::class, 'register']);
-Route::post('/auth/login', [AuthenticatedUserController::class, 'login']);
+Route::post('/auth/register', [AuthenticatedUserController::class, 'register'])->middleware('throttle:auth');
+Route::post('/auth/login', [AuthenticatedUserController::class, 'login'])->middleware('throttle:auth');
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function (): void {
     Route::get('/auth/me', [AuthenticatedUserController::class, 'me']);
     Route::post('/auth/logout', [AuthenticatedUserController::class, 'logout']);
     Route::get('/weather', [WeatherController::class, 'show']);

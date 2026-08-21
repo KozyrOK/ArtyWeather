@@ -79,6 +79,36 @@ class WeatherApiTest extends TestCase
         Bus::assertDispatched(GenerateWeatherPresentationJob::class);
     }
 
+     public function test_weather_api_is_rate_limited(): void
+    {
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response($this->openMeteoPayload(), 200),
+        ]);
+
+        Sanctum::actingAs(User::factory()->create());
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/weather')->assertOk();
+        }
+
+        $this->getJson('/api/weather')->assertTooManyRequests();
+    }
+
+    public function test_weather_presentation_uses_user_locale_for_cache_and_job(): void
+    {
+        Bus::fake();
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response($this->openMeteoPayload(), 200),
+        ]);
+
+        $user = User::factory()->create(['locale' => 'en']);
+        Sanctum::actingAs($user);
+
+        $this->withHeader('Accept-Language', 'ru')->getJson('/api/weather/presentation')->assertOk();
+
+        Bus::assertDispatched(GenerateWeatherPresentationJob::class, fn ($job) => $job->locale === 'en');
+    }
+
     public function test_open_meteo_http_errors_are_reported(): void
     {
         Http::fake([

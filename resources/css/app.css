@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
-:root { color: #172033; background: #eef6ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-body { margin: 0; min-height: 100vh; }
+:root { color-scheme: light; color: #172033; background: #eef6ff; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+:root[data-theme='dark'] { color-scheme: dark; color: #e5eefb; background: #0f172a; }
+@media (prefers-color-scheme: dark) { :root[data-theme='system'] { color-scheme: dark; color: #e5eefb; background: #0f172a; } }
+body { margin: 0; min-height: 100vh; background: inherit; color: inherit; }
 button, input, select { border-radius: .8rem; border: 1px solid #cbd5e1; padding: .65rem .8rem; }
 button { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
 .app-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); background: rgba(255,255,255,.82); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 10; }
@@ -35,3 +37,7 @@ button { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
 .ai-presentation__icon { position: absolute; right: 1rem; bottom: 1rem; width: 72px; height: 72px; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; opacity: .7; }
 @media (max-width: 768px) { .ai-presentation { grid-template-columns: 1fr; } }
+@media (prefers-color-scheme: dark) { :root[data-theme='system'] .app-header, :root[data-theme='system'] .card, :root[data-theme='system'] .metrics div, :root[data-theme='system'] .forecast-grid article { background: rgba(15,23,42,.9); border-color: rgba(148,163,184,.25); box-shadow: 0 20px 60px rgba(0,0,0,.25); } :root[data-theme='system'] .metrics span { color: #94a3b8; } }
+:root[data-theme='dark'] .app-header, :root[data-theme='dark'] .card, :root[data-theme='dark'] .metrics div, :root[data-theme='dark'] .forecast-grid article { background: rgba(15,23,42,.9); border-color: rgba(148,163,184,.25); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+:root[data-theme='dark'] .metrics span { color: #94a3b8; }
+:root[data-theme='dark'] button, :root[data-theme='dark'] input, :root[data-theme='dark'] select { border-color: #475569; }

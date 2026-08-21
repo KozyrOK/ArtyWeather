@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Weather;
 
+use App\Jobs\GenerateWeatherPresentationJob;
 use App\Models\User;
 use App\Models\WeatherSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -55,6 +57,26 @@ class WeatherApiTest extends TestCase
         $this->postJson('/api/weather/refresh')
             ->assertOk()
             ->assertJsonPath('data.weather_condition', 'CLEAR');
+    }
+
+     public function test_weather_presentation_endpoint_returns_processing_with_fallback_and_queues_job(): void
+    {
+        Bus::fake();
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response($this->openMeteoPayload(), 200),
+        ]);
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/api/weather/presentation')
+            ->assertOk()
+            ->assertJsonPath('status', 'processing')
+            ->assertJsonPath('fallback.weather_condition', 'RAIN')
+            ->assertJsonPath('fallback.season', 'SUMMER')
+            ->assertJsonPath('fallback.weather_icon', 'rain')
+            ->assertJsonPath('fallback.landscape', 'summer_rain');
+
+        Bus::assertDispatched(GenerateWeatherPresentationJob::class);
     }
 
     public function test_open_meteo_http_errors_are_reported(): void

@@ -11,4 +11,4 @@ const { state, enabled, forecast, load, refresh, saveSettings } = useWeather();
 async function logout() { await api.logout(); user.value = null; }
 onMounted(async () => { try { user.value = (await api.me()).user; } catch {} await load(); });
 </script>
-<template><AppHeader :user="user" :settings="state.settings" @update-settings="saveSettings" @logout="logout"/><div class="layout"><WeatherOverview :weather="state.weather" :enabled="enabled" :forecast="forecast" :loading="state.loading" :error="state.error" @refresh="refresh"/><Dashboard :settings="state.settings" :saving="state.saving" @save="saveSettings"/></div></template>
+<template><AppHeader :user="user" :settings="state.settings" @update-settings="saveSettings" @logout="logout"/><div class="layout"><WeatherOverview :weather="state.weather" :presentation="state.presentation" :presentation-loading="state.presentationLoading" :enabled="enabled" :forecast="forecast" :loading="state.loading" :error="state.error" @refresh="refresh"/><Dashboard :settings="state.settings" :saving="state.saving" @save="saveSettings"/></div></template>

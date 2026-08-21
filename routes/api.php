@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/auth/logout', [AuthenticatedUserController::class, 'logout']);
     Route::get('/weather', [WeatherController::class, 'show']);
     Route::post('/weather/refresh', [WeatherController::class, 'refresh']);
+    Route::get('/weather/presentation', [WeatherController::class, 'presentation']);
     Route::get('/weather-settings', [WeatherSettingController::class, 'show']);
     Route::put('/weather-settings', [WeatherSettingController::class, 'update']);
     Route::patch('/weather-settings', [WeatherSettingController::class, 'update']);

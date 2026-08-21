@@ -29,4 +29,9 @@ button { background: #2563eb; color: white; font-weight: 700; cursor: pointer; }
 .error { color: #b91c1c; }
 .refresh { justify-self: start; }
 @media (max-width: 1050px) { .layout, .overview-grid { grid-template-columns: 1fr; } .dashboard { position: static; } }
-@media (max-width: 640px) { .app-header, .header-actions, .hero { display: grid; grid-template-columns: 1fr; } .weather-icon { width: 72px; height: 72px; } }
+@media (max-width: 640px) { .app-header, .header-actions, .hero { display: grid; grid-template-columns: 1fr; } .weather-icon { width: 72px; height: 72px; } }.ai-presentation { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ai-presentation__media { position: relative; min-height: 180px; }
+.ai-presentation__landscape { width: 100%; height: 100%; object-fit: cover; border-radius: 1rem; }
+.ai-presentation__icon { position: absolute; right: 1rem; bottom: 1rem; width: 72px; height: 72px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; opacity: .7; }
+@media (max-width: 768px) { .ai-presentation { grid-template-columns: 1fr; } }

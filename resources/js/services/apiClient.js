@@ -32,6 +32,7 @@ export const api = {
   login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   logout: () => request('/auth/logout', { method: 'POST' }).finally(() => authToken.set(null)),
   weather: () => request('/weather'),
+  weatherPresentation: () => request('/weather/presentation'),
   refreshWeather: () => request('/weather/refresh', { method: 'POST' }),
   settings: () => request('/weather-settings'),
   updateSettings: (settings) => request('/weather-settings', { method: 'PATCH', body: JSON.stringify(settings) }),

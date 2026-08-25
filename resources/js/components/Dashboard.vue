@@ -65,13 +65,8 @@ watchEffect(() => {
 </script>
 
 <template>
-    <aside class="card dashboard">
-        <div class="panel-heading">
-            <div>
-                <span class="eyebrow">{{ t.dashboard }}</span>
-                <h2>{{ t.dashboard }}</h2>
-            </div>
-        </div>
+    <main class="card dashboard">
+        <div class="panel-heading"><h1>{{ t.dashboard }}</h1></div>
 
         <form
             v-if="settings"
@@ -116,6 +111,7 @@ watchEffect(() => {
                     <select v-model="form.locale">
                         <option value="en">English</option>
                         <option value="ru">Русский</option>
+                        <option value="uk">Українська</option>
                     </select>
                 </label>
 
@@ -168,5 +164,5 @@ watchEffect(() => {
         >
             {{ t.settingsLoading }}
         </p>
-    </aside>
+    </main>
 </template>

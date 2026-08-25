@@ -23,7 +23,7 @@ final readonly class WeatherPresentationPromptBuilder
                 'Do not determine or change weather_condition, season, or factual weather values.',
                 'Do not generate images, SVG, filenames, URLs, filesystem paths, or new asset identifiers.',
                 'Return only valid JSON with keys: weather_icon, landscape, summary, recommendation.',
-                'Use concise, practical Russian text unless locale explicitly requires otherwise.',
+                'Use concise, practical text in the requested locale (en, ru, or uk).',
             ]),
             'user' => json_encode([
                 'locale' => $locale,

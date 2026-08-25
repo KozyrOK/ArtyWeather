@@ -19,4 +19,13 @@ class WeatherSettingsLocalizationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('locale');
     }
+
+    public function test_ukrainian_locale_can_be_saved(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->patchJson('/api/weather-settings', ['locale' => 'uk'])
+            ->assertOk()
+            ->assertJsonPath('data.user.locale', 'uk');
+    }
 }

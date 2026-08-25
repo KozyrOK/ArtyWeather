@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Weather;
 
-use App\Jobs\GenerateWeatherPresentationJob;
 use App\Models\User;
 use App\Models\WeatherSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -59,9 +57,8 @@ class WeatherApiTest extends TestCase
             ->assertJsonPath('data.weather_condition', 'CLEAR');
     }
 
-     public function test_weather_presentation_endpoint_returns_processing_with_fallback_and_queues_job(): void
+     public function test_weather_presentation_endpoint_returns_ready_presentation_without_queue_worker(): void
     {
-        Bus::fake();
         Http::fake([
             'api.open-meteo.com/*' => Http::response($this->openMeteoPayload(), 200),
         ]);
@@ -70,13 +67,11 @@ class WeatherApiTest extends TestCase
 
         $this->getJson('/api/weather/presentation')
             ->assertOk()
-            ->assertJsonPath('status', 'processing')
-            ->assertJsonPath('fallback.weather_condition', 'RAIN')
-            ->assertJsonPath('fallback.season', 'SUMMER')
-            ->assertJsonPath('fallback.weather_icon', 'rain')
-            ->assertJsonPath('fallback.landscape', 'summer_rain');
-
-        Bus::assertDispatched(GenerateWeatherPresentationJob::class);
+            ->assertJsonPath('status', 'ready')
+            ->assertJsonPath('presentation.weather_condition', 'RAIN')
+            ->assertJsonPath('presentation.season', 'SUMMER')
+            ->assertJsonPath('presentation.weather_icon', 'rain')
+            ->assertJsonPath('presentation.landscape', 'summer_rain');        
     }
 
      public function test_weather_api_is_rate_limited(): void
@@ -94,9 +89,8 @@ class WeatherApiTest extends TestCase
         $this->getJson('/api/weather')->assertTooManyRequests();
     }
 
-    public function test_weather_presentation_uses_user_locale_for_cache_and_job(): void
+    public function test_weather_presentation_uses_user_locale_instead_of_request_header(): void
     {
-        Bus::fake();
         Http::fake([
             'api.open-meteo.com/*' => Http::response($this->openMeteoPayload(), 200),
         ]);
@@ -104,9 +98,9 @@ class WeatherApiTest extends TestCase
         $user = User::factory()->create(['locale' => 'en']);
         Sanctum::actingAs($user);
 
-        $this->withHeader('Accept-Language', 'ru')->getJson('/api/weather/presentation')->assertOk();
-
-        Bus::assertDispatched(GenerateWeatherPresentationJob::class, fn ($job) => $job->locale === 'en');
+        $this->withHeader('Accept-Language', 'ru')->getJson('/api/weather/presentation')
+            ->assertOk()
+            ->assertJsonPath('status', 'ready');
     }
 
     public function test_open_meteo_http_errors_are_reported(): void

@@ -39,15 +39,20 @@ const condition = computed(
 const icon = computed(
     () => weatherIconMap[condition.value.toLowerCase()]
 );
+
+const conditionLabel = computed(() => {
+    const key = condition.value.toLowerCase().replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+
+    return props.t[key] || condition.value;
+});
+
 </script>
 
 <template>
     <section class="card current-weather">
         <div class="current-weather__main">
             <div>
-                <span class="eyebrow">
-                    {{ t.currentWeather }}
-                </span>
+                <h1>{{ t.currentWeather }}</h1>
 
                 <div class="current-weather__temperature">
                     <span v-if="enabled.temperature">
@@ -61,7 +66,7 @@ const icon = computed(
 
                 <div class="current-weather__condition">
                     {{ t.weatherCondition }}:
-                    {{ condition }}
+                    {{ conditionLabel }}
                 </div>
 
                 <div class="current-weather__coordinates">

@@ -2,11 +2,9 @@
  
 namespace App\Http\Controllers\Api;
  
-use App\DTO\Weather\Season;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WeatherPresentationResource;
 use App\Http\Resources\WeatherResource;
-use App\Jobs\GenerateWeatherPresentationJob;
 use App\Services\AI\AiWeatherPresentationService;
 use App\Services\Weather\WeatherService;
 use Illuminate\Http\JsonResponse;
@@ -27,9 +25,9 @@ class WeatherController extends Controller
     public function presentation(Request $request, WeatherService $weatherService, AiWeatherPresentationService $presentations): JsonResponse
     {
         $report = $weatherService->currentFor($request->user());        
-         $locale = in_array($request->user()->locale, ['en', 'ru'], true)
+         $locale = in_array($request->user()->locale, ['en', 'ru', 'ua'], true)
             ? $request->user()->locale
-            : ($request->getPreferredLanguage(['en', 'ru']) ?? 'en');
+            : ($request->getPreferredLanguage(['en', 'ru', 'ua']) ?? 'en');
         $presentation = $presentations->cached($report->snapshot, $report->condition, $locale);
 
         if ($presentation !== null) {
@@ -38,16 +36,11 @@ class WeatherController extends Controller
                 'presentation' => WeatherPresentationResource::make($presentation),
             ]);
         }
-
-        GenerateWeatherPresentationJob::dispatch($report->snapshot, $report->condition, $locale);
-
+        
         return response()->json([
-            'status' => 'processing',
-            'fallback' => WeatherPresentationResource::make(
-                $presentations->fallback(
-                    $report->condition,
-                    Season::fromMonth((int) $report->snapshot->timestamp->format('n')),
-                ),
+            'status' => 'ready',
+            'presentation' => WeatherPresentationResource::make(
+                $presentations->generate($report->snapshot, $report->condition, $locale),
             ),
         ]);
     }

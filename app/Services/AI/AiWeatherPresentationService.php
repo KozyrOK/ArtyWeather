@@ -44,7 +44,7 @@ final readonly class AiWeatherPresentationService
             $payload = $this->client->generate($prompt['system'], $prompt['user']);
             $presentation = $this->fromValidatedPayload($payload, $condition, $season);
         } catch (Throwable) {
-            $presentation = $this->fallback($condition, $season);
+            $presentation = $this->fallback($condition, $season, $locale);
         }
 
         $this->cache->put($key, $presentation, $this->ttl());
@@ -52,27 +52,15 @@ final readonly class AiWeatherPresentationService
         return $presentation;
     }
 
-    public function fallback(WeatherCondition $condition, Season $season): WeatherPresentation
+    public function fallback(WeatherCondition $condition, Season $season, string $locale = 'en'): WeatherPresentation
     {
-        $label = match ($condition) {
-            WeatherCondition::CLEAR => 'ясная',
-            WeatherCondition::PARTLY_CLOUDY => 'переменно облачная',
-            WeatherCondition::CLOUDY => 'облачная',
-            WeatherCondition::RAIN => 'дождливая',
-            WeatherCondition::HEAVY_RAIN => 'с сильным дождём',
-            WeatherCondition::SNOW => 'снежная',
-            WeatherCondition::FOG => 'туманная',
-            WeatherCondition::STORM => 'штормовая',
+        [$summary, $recommendation] = match ($locale) {
+            'ru' => ['Для описания используются актуальные метеоданные.', 'Ориентируйтесь на текущие показатели и подготовьтесь к условиям на улице.'],
+            'uk' => ['Для опису використовуються актуальні метеoдaні.', 'Орієнтуйтеся на поточні показники та підготуйтеся до умов надворі.'],
+            default => ["Current conditions are {$condition->value}. This presentation uses current weather data.", 'Check the current measurements and prepare appropriately before going outside.'],
         };
 
-        return new WeatherPresentation(
-            $condition,
-            $season,
-            $this->assets->iconFor($condition),
-            $this->assets->landscapeFor($season, $condition),
-            "Сейчас {$label} погода. Фактические данные доступны без AI-описания.",
-            'Ориентируйтесь на текущие показатели погоды и подготовьтесь к условиям на улице.',
-        );
+        return new WeatherPresentation($condition, $season, $this->assets->iconFor($condition), $this->assets->landscapeFor($season, $condition), $summary, $recommendation);
     }
 
     private function fromValidatedPayload(array $payload, WeatherCondition $condition, Season $season): WeatherPresentation

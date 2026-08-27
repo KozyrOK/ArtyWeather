@@ -18,7 +18,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['save']);
+const emit = defineEmits(['navigate', 'save']);
 
 const form = reactive({});
 
@@ -66,8 +66,17 @@ watchEffect(() => {
 
 <template>
     <main class="card dashboard">
-        <div class="panel-heading"><h1>{{ t.dashboard }}</h1></div>
+        <div class="dashboard__heading">
+            <button
+                class="secondary-button dashboard__back-button"
+                type="button"
+                @click="emit('navigate', 'weather')"
+            >
+                {{ t.backToWeather }}
+            </button>
 
+            <h1>{{ t.dashboard }}</h1>
+        </div>
         <form
             v-if="settings"
             class="settings-form"

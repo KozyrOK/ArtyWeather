@@ -28,8 +28,7 @@ const fields = {
     pressure: ['pressure', ' hPa'],
     wind_speed: ['windSpeed', ' km/h'],
     wind_direction: ['windDirection', '°'],
-    wind_gusts: ['windGusts', ' km/h'],
-    weather_code: ['weatherCode', ''],
+    wind_gusts: ['windGusts', ' km/h'],    
 };
 
 const condition = computed(

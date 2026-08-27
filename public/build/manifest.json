@@ -132,7 +132,7 @@
     "src": "assets/logo.png"
   },
   "assets/weatherIcons/clear.png": {
-    "file": "assets/clear-CAJz9iQj.png",
+    "file": "assets/clear-D0NuG3du.png",
     "src": "assets/weatherIcons/clear.png"
   },
   "assets/weatherIcons/cloudy.png": {
@@ -164,7 +164,7 @@
     "src": "assets/weatherIcons/storm.png"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BVoVsM3e.css",
+    "file": "assets/app-Bd45CI0u.css",
     "name": "app",
     "names": [
       "app.css"
@@ -173,15 +173,15 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-B6otQiKn.js",
+    "file": "assets/app-4W0Y5oaL.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-BVoVsM3e.css"
+      "assets/app-Bd45CI0u.css"
     ],
     "assets": [
-      "assets/clear-CAJz9iQj.png",
+      "assets/clear-D0NuG3du.png",
       "assets/cloudy-Ch87kNQ3.png",
       "assets/fog-BWuTl8_0.png",
       "assets/heavy_rain-D3KMdrnP.png",

@@ -475,6 +475,17 @@ img {
 
 .dashboard { width: min(780px, 100%); margin: 0 auto; }
 
+.dashboard__heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.dashboard__back-button {
+    min-height: 38px;
+}
+
 .settings-form {
     display: grid;
     gap: 1rem;

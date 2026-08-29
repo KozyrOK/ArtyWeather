@@ -16,12 +16,13 @@ function applyClientPreferences(nextLocale, nextTheme) { if (nextLocale) localSt
 function syncPageWithLocation() { page.value = pageFromLocation(); }
 function navigate(nextPage) {
     const destination = nextPage === 'dashboard' ? 'dashboard' : 'weather';
-    if (page.value === destination && pageFromLocation() === destination) return;
+    const targetHash = destination === 'dashboard' ? '#dashboard' : '';
 
-    page.value = destination;
-    const url = new URL(window.location.href);
-    url.hash = destination === 'dashboard' ? 'dashboard' : '';
-    window.history.pushState({ page: destination }, '', `${url.pathname}${url.search}${url.hash}`);
+    if (window.location.hash === targetHash && page.value === destination) {
+        return;
+    }
+
+    window.location.hash = targetHash;
 }
 async function initializeAuthenticatedUser() { if (!authToken.get()) { user.value = null; authChecked.value = true; return; } authLoading.value = true; try { const response = await api.me(); user.value = response.user; applyClientPreferences(response.user?.locale, response.user?.theme); await load(); } catch (error) { if (error?.status === 401) { authToken.clear(); user.value = null; } else state.error = error; } finally { authLoading.value = false; authChecked.value = true; } }
 async function handleAuthenticated(authenticatedUser) { user.value = authenticatedUser; applyClientPreferences(authenticatedUser.locale, authenticatedUser.theme); await load(); }

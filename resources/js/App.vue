@@ -1,25 +1,35 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { logoUrl } from './assets/weatherAssets';
 
 import AppHeader from './components/AppHeader.vue'; import Dashboard from './components/Dashboard.vue'; import LoginView from './components/LoginView.vue'; import WeatherOverview from './components/WeatherOverview.vue';
 import { api, authToken } from './services/apiClient'; import { useWeather } from './composables/useWeather'; import { resolveLocale, translations } from './i18n';
 
-const user = ref(null); const authChecked = ref(false); const authLoading = ref(false); const page = ref(window.location.hash === '#dashboard' ? 'dashboard' : 'weather');
+const pageFromLocation = () => window.location.hash === '#dashboard' ? 'dashboard' : 'weather';
+const user = ref(null); const authChecked = ref(false); const authLoading = ref(false); const page = ref(pageFromLocation());
 
 const { state, enabled, forecast, load, refresh, saveSettings } = useWeather();
 
 const locale = computed(() => resolveLocale(state.settings?.user?.locale || user.value?.locale || localStorage.getItem('artyweather_locale') || 'en'));
 const theme = computed(() => state.settings?.user?.theme || user.value?.theme || localStorage.getItem('artyweather_theme') || 'light'); const t = computed(() => translations(locale.value)); const authenticated = computed(() => Boolean(user.value));
 function applyClientPreferences(nextLocale, nextTheme) { if (nextLocale) localStorage.setItem('artyweather_locale', nextLocale); if (nextTheme) localStorage.setItem('artyweather_theme', nextTheme); }
-function navigate(nextPage) { page.value = nextPage === 'dashboard' ? 'dashboard' : 'weather'; window.location.hash = page.value === 'dashboard' ? 'dashboard' : ''; }
+function syncPageWithLocation() { page.value = pageFromLocation(); }
+function navigate(nextPage) {
+    const destination = nextPage === 'dashboard' ? 'dashboard' : 'weather';
+    if (page.value === destination && pageFromLocation() === destination) return;
+
+    page.value = destination;
+    const url = new URL(window.location.href);
+    url.hash = destination === 'dashboard' ? 'dashboard' : '';
+    window.history.pushState({ page: destination }, '', `${url.pathname}${url.search}${url.hash}`);
+}
 async function initializeAuthenticatedUser() { if (!authToken.get()) { user.value = null; authChecked.value = true; return; } authLoading.value = true; try { const response = await api.me(); user.value = response.user; applyClientPreferences(response.user?.locale, response.user?.theme); await load(); } catch (error) { if (error?.status === 401) { authToken.clear(); user.value = null; } else state.error = error; } finally { authLoading.value = false; authChecked.value = true; } }
 async function handleAuthenticated(authenticatedUser) { user.value = authenticatedUser; applyClientPreferences(authenticatedUser.locale, authenticatedUser.theme); await load(); }
 async function handleLogout() { try { await api.logout(); } finally { authToken.clear(); user.value = null; state.weather = null; state.presentation = null; state.settings = null; state.error = null; navigate('weather'); } }
 async function handleLocaleChange(nextLocale) { applyClientPreferences(nextLocale, theme.value); if (authenticated.value) await saveSettings({ locale: nextLocale, theme: theme.value }); }
 async function handleThemeChange(nextTheme) { applyClientPreferences(locale.value, nextTheme); if (authenticated.value) await saveSettings({ locale: locale.value, theme: nextTheme }); }
 async function handleSettingsChange(settings) { applyClientPreferences(settings.locale || locale.value, settings.theme || theme.value); await saveSettings(settings); if (state.settings?.user) user.value = { ...user.value, ...state.settings.user }; }
-watch(theme, (value) => { document.documentElement.dataset.theme = value === 'dark' ? 'dark' : 'light'; }, { immediate: true }); watch(locale, (value) => { document.documentElement.lang = value; }, { immediate: true }); window.addEventListener('hashchange', () => { page.value = window.location.hash === '#dashboard' ? 'dashboard' : 'weather'; }); onMounted(initializeAuthenticatedUser);
+watch(theme, (value) => { document.documentElement.dataset.theme = value === 'dark' ? 'dark' : 'light'; }, { immediate: true }); watch(locale, (value) => { document.documentElement.lang = value; }, { immediate: true }); onMounted(() => { window.addEventListener('hashchange', syncPageWithLocation); window.addEventListener('popstate', syncPageWithLocation); initializeAuthenticatedUser(); }); onBeforeUnmount(() => { window.removeEventListener('hashchange', syncPageWithLocation); window.removeEventListener('popstate', syncPageWithLocation); });
 
 </script>
 

@@ -6,4 +6,8 @@ const season = computed(() => ['winter','winter','spring','spring','spring','sum
 const key = computed(() => `${season.value}_${(props.weather?.weather_condition || 'clear').toLowerCase()}`);
 const image = computed(() => landscapeMap[key.value]);
 </script>
-<template><section class="card landscape" :aria-label="t.currentWeather"><img v-if="image" :src="image" alt=""></section></template>
+<template>
+    <section class="card landscape" :aria-label="t.currentWeather">
+        <img v-if="image" :src="image" width="200" height="150" alt="">
+    </section>
+</template>

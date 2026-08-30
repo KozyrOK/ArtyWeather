@@ -33,6 +33,7 @@ class WeatherApiTest extends TestCase
             ->assertJsonPath('data.weather_condition', 'RAIN')
             ->assertJsonPath('data.display.temperature', 18.6)
             ->assertJsonPath('data.snapshot.forecast.0.temperature', 18.6)
+            ->assertJsonPath('data.snapshot.forecast.0.weather_condition', 'RAIN')
             ->assertJsonMissingPath('data.display.wind_speed');
 
         Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://api.open-meteo.com/v1/forecast')

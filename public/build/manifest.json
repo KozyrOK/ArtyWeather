@@ -164,7 +164,7 @@
     "src": "assets/weatherIcons/storm.png"
   },
   "resources/css/app.css": {
-    "file": "assets/app-zIp_E0mX.css",
+    "file": "assets/app-CjvSCCFc.css",
     "name": "app",
     "names": [
       "app.css"
@@ -173,12 +173,12 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-DGK4XsJD.js",
+    "file": "assets/app-CiACGA_P.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
-      "assets/app-zIp_E0mX.css"
+      "assets/app-CjvSCCFc.css"
     ],
     "assets": [
       "assets/clear-D0NuG3du.png",

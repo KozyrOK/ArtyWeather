@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { weatherIconMap } from '../assets/weatherAssets';
 
 const props = defineProps({
@@ -13,8 +13,7 @@ const props = defineProps({
 const fields = [
     ['apparent_temperature', 'apparentTemperature', '°C'],
     ['relative_humidity', 'relativeHumidity', '%'],
-    ['precipitation', 'precipitation', ' mm'],
-    ['weather_code', 'weatherCode', ''],
+    ['precipitation', 'precipitation', ' mm'],    
     ['cloud_cover', 'cloudCover', '%'],
     ['pressure', 'pressure', ' hPa'],
     ['wind_speed', 'windSpeed', ' km/h'],
@@ -23,6 +22,8 @@ const fields = [
 ];
 
 const selectedDay = ref(null);
+const detailsOpen = ref(false);
+const detailsControl = ref(null);
 const dayKey = (timestamp) => new Date(timestamp).toISOString().slice(0, 10);
 const formatDay = (timestamp) => new Intl.DateTimeFormat(props.locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(timestamp));
 const formatTime = (timestamp) => new Intl.DateTimeFormat(props.locale, { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(new Date(timestamp));
@@ -60,6 +61,15 @@ watch(days, (nextDays) => {
     }
 }, { immediate: true });
 
+const closeDetailsOnOutsideClick = (event) => {
+    if (detailsControl.value && !detailsControl.value.contains(event.target)) {
+        detailsOpen.value = false;
+    }
+};
+
+onMounted(() => document.addEventListener('click', closeDetailsOnOutsideClick));
+onBeforeUnmount(() => document.removeEventListener('click', closeDetailsOnOutsideClick));
+
 </script>
 
 <template>
@@ -80,25 +90,42 @@ watch(days, (nextDays) => {
             </button>
         </div>
 
-        <section v-if="selected" class="forecast-details" :aria-label="formatDay(selected.timestamp)">
-            <div class="forecast-details__heading">
-                <span class="eyebrow">{{ t.forecast }}</span>
-                <h2>{{ formatDay(selected.timestamp) }}</h2>
-            </div>
-            <div class="forecast-hours">
-                <article v-for="snapshot in selected.hours" :key="snapshot.timestamp" class="forecast-hour">
-                    <time :datetime="snapshot.timestamp" class="forecast-hour__time">{{ formatTime(snapshot.timestamp) }}</time>
-                    <img v-if="conditionIcon(snapshot)" :src="conditionIcon(snapshot)" :alt="snapshot.weather_condition" class="forecast-hour__icon">
-                    <strong class="forecast-hour__temperature">{{ formatTemperature(snapshot.temperature) }}</strong>
-                    <dl v-if="selectedFields.some(([key]) => snapshot[key] !== null && snapshot[key] !== undefined)" class="forecast-hour__metrics">
-                        <template v-for="[key, label, unit] in selectedFields" :key="key">
-                            <dt v-if="snapshot[key] !== null && snapshot[key] !== undefined">{{ t[label] }}</dt>
-                            <dd v-if="snapshot[key] !== null && snapshot[key] !== undefined">{{ snapshot[key] }}{{ unit }}</dd>
-                        </template>
-                    </dl>
-                </article>
-            </div>
-        </section>
+        <div v-if="selected" class="forecast-details-control">
+            <button
+                class="forecast-details__trigger"
+                type="button"
+                aria-controls="forecast-details"
+                :aria-expanded="detailsOpen"
+                @click="detailsOpen = !detailsOpen"
+            >
+                {{ t.detailedForecast }}
+            </button>
+
+            <section
+                v-show="detailsOpen"
+                id="forecast-details"
+                class="forecast-details"
+                :aria-label="`${t.detailedForecast}: ${formatDay(selected.timestamp)}`"
+            >
+                <div class="forecast-details__heading">
+                    <span class="eyebrow">{{ t.forecast }}</span>
+                    <h2>{{ formatDay(selected.timestamp) }}</h2>
+                </div>
+                <div class="forecast-hours">
+                    <article v-for="snapshot in selected.hours" :key="snapshot.timestamp" class="forecast-hour">
+                        <time :datetime="snapshot.timestamp" class="forecast-hour__time">{{ formatTime(snapshot.timestamp) }}</time>
+                        <img v-if="conditionIcon(snapshot)" :src="conditionIcon(snapshot)" :alt="snapshot.weather_condition" class="forecast-hour__icon">
+                        <strong class="forecast-hour__temperature">{{ formatTemperature(snapshot.temperature) }}</strong>
+                        <dl v-if="selectedFields.some(([key]) => snapshot[key] !== null && snapshot[key] !== undefined)" class="forecast-hour__metrics">
+                            <template v-for="[key, label, unit] in selectedFields" :key="key">
+                                <dt v-if="snapshot[key] !== null && snapshot[key] !== undefined">{{ t[label] }}</dt>
+                                <dd v-if="snapshot[key] !== null && snapshot[key] !== undefined">{{ snapshot[key] }}{{ unit }}</dd>
+                            </template>
+                        </dl>
+                    </article>
+                </div>
+            </section>
+        </div>        
     </div>
     <p v-else class="empty-table">{{ t.noForecast }}</p>    
 </template>

@@ -446,8 +446,10 @@ img {
 
 .forecast-card,
 .charts-section {
+    position: relative;
     display: grid;
     gap: 1rem;
+    z-index: 1;
 }
 
 .forecast {
@@ -497,6 +499,7 @@ img {
 .forecast-details-control {
     position: relative;
     justify-self: start;
+    z-index: 50;
 }
 
 .forecast-details__trigger {
@@ -535,7 +538,7 @@ img {
     position: absolute;
     top: calc(100% + 0.5rem);
     left: 0;
-    z-index: 1;
+    z-index: 50;
     width: min(760px, calc(100vw - 2rem));
     max-height: min(32rem, calc(100vh - 8rem));
     padding: 1.25rem;
@@ -580,6 +583,7 @@ img {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+    
 }
 
 .chart-card {

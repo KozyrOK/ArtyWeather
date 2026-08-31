@@ -34,4 +34,16 @@ watch(theme, (value) => { document.documentElement.dataset.theme = value === 'da
 
 </script>
 
-<template><div class="app-root" :style="{ '--app-logo-url': `url(${logoUrl})` }"><LoginView v-if="authChecked && !authenticated" :t="t" :locale="locale" :theme="theme" @authenticated="handleAuthenticated" @locale-change="handleLocaleChange" @theme-change="handleThemeChange"/><div v-else-if="authenticated" class="authenticated-app"><AppHeader :user="user" :settings="state.settings" :t="t" :page="page" @update-settings="handleSettingsChange" @logout="handleLogout" @navigate="navigate"/><div class="app-page"><WeatherOverview v-if="page === 'weather'" :weather="state.weather" :presentation="state.presentation" :presentation-loading="state.presentationLoading" :enabled="enabled" :forecast="forecast" :forecast-period="state.settings?.forecast_period" :loading="state.loading" :error="state.error" :t="t" :locale="locale" @refresh="refresh"/><Dashboard v-else :settings="state.settings" :saving="state.saving" :t="t" @navigate="navigate" @save="handleSettingsChange"/></div></div><div v-else class="app-loading"><span>{{ t.loadingWeather }}</span></div></div></template>
+<template>
+    <div class="app-root" :style="{ '--app-logo-url': `url(${logoUrl})` }">
+        <LoginView v-if="authChecked && !authenticated" :t="t" :locale="locale" :theme="theme" @authenticated="handleAuthenticated" @locale-change="handleLocaleChange" @theme-change="handleThemeChange"/>
+            <div v-else-if="authenticated" class="authenticated-app">
+                <AppHeader :user="user" :settings="state.settings" :t="t" :page="page" @update-settings="handleSettingsChange" @logout="handleLogout" @navigate="navigate"/>
+                    <div class="app-page">
+                        <WeatherOverview v-if="page === 'weather'" :weather="state.weather" :presentation="state.presentation" :presentation-loading="state.presentationLoading" :enabled="enabled" :forecast="forecast" :forecast-period="state.settings?.forecast_period" :loading="state.loading" :error="state.error" :t="t" :locale="locale" @refresh="refresh"/>
+                        <Dashboard v-else :settings="state.settings" :saving="state.saving" :t="t" @navigate="navigate" @save="handleSettingsChange"/>
+                        </div></div>
+                        <div v-else class="app-loading">
+                        <span>{{ t.loadingWeather }}</span>
+                        </div></div>
+</template>

@@ -4,4 +4,31 @@ import TemperatureChart from './charts/TemperatureChart.vue'; import PressureCha
 defineProps({ weather: Object, presentation: Object, enabled: Object, forecast: Array, forecastPeriod: Number, loading: Boolean, presentationLoading: Boolean, error: Object, t: Object, locale: String }); defineEmits(['refresh']);
 </script>
 
-<template><main class="overview"><div v-if="loading" class="state">{{ t.loadingWeather }}</div><div v-else-if="error" class="state error">{{ error.message }}</div><template v-else-if="weather"><div class="overview__toolbar"><span></span><button class="secondary-button" @click="$emit('refresh')">{{ t.refreshWeather }}</button></div><CurrentWeather :weather="weather" :enabled="enabled" :t="t"/><AiWeatherPresentation :weather="weather" :presentation="presentation" :loading="presentationLoading" :t="t"/><section class="card forecast-card"><h1>{{ t.forecast }}</h1><WeatherForecast :snapshots="forecast" :enabled="enabled" :forecast-period="forecastPeriod" :t="t" :locale="locale"/></section><section class="card charts-section"><h1>{{ t.charts }}</h1><div class="charts"><TemperatureChart v-if="enabled.temperature" :snapshots="forecast" :t="t"/><PressureChart v-if="enabled.pressure" :snapshots="forecast" :t="t"/><WindChart v-if="enabled.wind_speed" :snapshots="forecast" :t="t"/><PrecipitationChart v-if="enabled.precipitation" :snapshots="forecast" :t="t"/></div></section></template><div v-else class="state">{{ t.emptyWeather }}</div></main></template>
+<template>
+    <main class="overview">
+        <div v-if="loading" class="state">{{ t.loadingWeather }}</div>
+        <div v-else-if="error" class="state error">{{ error.message }}</div>
+            <template v-else-if="weather">
+                <div class="overview__toolbar">
+                    <span></span>
+                    <button class="secondary-button" @click="$emit('refresh')">{{ t.refreshWeather }}</button>
+                </div>
+                    <CurrentWeather :weather="weather" :enabled="enabled" :t="t"/>
+                    <AiWeatherPresentation :weather="weather" :presentation="presentation" :loading="presentationLoading" :t="t"/>
+                <section class="card forecast-card">
+                    <h1>{{ t.forecast }}</h1>
+                    <WeatherForecast :snapshots="forecast" :enabled="enabled" :forecast-period="forecastPeriod" :t="t" :locale="locale"/>
+                </section>
+                <section class="card charts-section">
+                    <h1>{{ t.charts }}</h1>
+                    <div class="charts">
+                        <TemperatureChart v-if="enabled.temperature" :snapshots="forecast" :t="t"/>
+                        <PressureChart v-if="enabled.pressure" :snapshots="forecast" :t="t"/>
+                        <WindChart v-if="enabled.wind_speed" :snapshots="forecast" :t="t"/>
+                        <PrecipitationChart v-if="enabled.precipitation" :snapshots="forecast" :t="t"/>
+                    </div>
+                </section>
+            </template>
+<div v-else class="state">{{ t.emptyWeather }}</div>
+</main>
+</template>

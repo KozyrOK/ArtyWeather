@@ -444,7 +444,13 @@ img {
     color: var(--text);
 }
 
-.forecast-card,
+.forecast-card {
+    position: relative;
+    display: grid;
+    gap: 1rem;
+    z-index: 2;
+}
+
 .charts-section {
     position: relative;
     display: grid;

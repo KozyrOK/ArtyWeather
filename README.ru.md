@@ -7,144 +7,79 @@
 
 # ArtyWeather
 
-**ArtyWeather** — PET-проект на Laravel для получения практического опыта разработки современных веб-приложений, работы с внешними REST API, кеширования, асинхронной обработки, Vue.js, Chart.js и интеграции локальной LLM.
+**ArtyWeather** — PET-проект на Laravel, который получает прогноз погоды через бесплатный **Open-Meteo API** и отображает его в интерфейсе на **Vue.js 3**.
 
-Приложение получает прогноз погоды для заданной пользователем географической точки через бесплатный **Open-Meteo API** и отображает нормализованные погодные данные через интерфейс Vue.js.
+Проект также демонстрирует интеграцию локальной LLM **Ollama** как отдельного **AI Presentation Layer**: модель получает уже нормализованные погодные данные и формирует краткое описание и рекомендацию. Фактические погодные данные определяются не AI, а приложением на основе ответа Open-Meteo.
 
-Локальная LLM **Ollama** используется исключительно как **AI Presentation Layer**. Она не является источником погодных данных и не заменяет детерминированную логику приложения, определяющую погодное состояние.
+## Возможности
 
-## Цели проекта
+- получение прогноза для заданных координат;
+- настраиваемый период прогноза;
+- выбор отображаемых погодных параметров;
+- кеширование погодных данных в Redis;
+- авторизация через Laravel Sanctum;
+- Weather Overview и Dashboard на Vue.js 3;
+- графики погодных временных рядов через Chart.js;
+- детерминированное определение `WeatherCondition`;
+- локальная AI-презентация через Ollama;
+- структурированный JSON output с валидацией;
+- заранее подготовленные `WeatherIcon` и `Landscape`;
+- fallback-представление при ошибке AI;
+- rate limiting для API.
 
-- Освоить современную архитектуру Laravel-приложения
-- Научиться работать с внешним REST API
-- Реализовать модульный монолит
-- Применять Service Layer и инфраструктурные абстракции
-- Нормализовать ответы внешнего API во внутренние DTO/domain-структуры приложения
-- Реализовать Laravel Cache и Redis
-- Реализовать асинхронную обработку с помощью Laravel Queue
-- Создать frontend на Vue.js 3
-- Визуализировать временные ряды погодных данных с помощью Chart.js
-- Интегрировать локальную LLM через Ollama
-- Реализовать структурированный AI output и строгую валидацию
-- Реализовать graceful degradation при недоступности внешних сервисов
-- Создать PET-проект, готовый для представления в портфолио
+## Стек
 
-## Основной архитектурный принцип
+| Область | Технологии |
+|---|---|
+| Backend | Laravel 13, PHP 8.3+, Laravel Sanctum, Laravel HTTP Client, Cache, Queue |
+| Database | PostgreSQL 18 |
+| Cache / Queue | Redis |
+| Frontend | Vue.js 3, Vite, Tailwind CSS 4, Chart.js 4, vue-chartjs |
+| AI | Ollama, локальная LLM |
+| Infrastructure | Docker, Laravel Sail |
+| Weather API | Open-Meteo |
 
-ArtyWeather явно разделяет **фактические погодные данные** и **AI-генерируемое представление**.
+## Архитектура
+
+Проект построен как модульный монолит с разделением получения погодных данных и их презентации.
 
 ```text
-Open-Meteo
-    ↓
-WeatherNormalizer
-    ↓
-WeatherSnapshot
-    ↓
-WeatherCondition
-    ↓
-AI Presentation Layer
-    ↓
-Ollama
-    ↓
-WeatherPresentation
-    ↓
 Vue.js
+   ↓
+WeatherController
+   ↓
+WeatherService
+   ↓
+Redis Cache
+   │
+   └── MISS → OpenMeteoClient → Open-Meteo
+                              ↓
+                       WeatherNormalizer
+                              ↓
+                       WeatherSnapshot
+                              ↓
+                  WeatherConditionResolver
+                              ↓
+                       WeatherCondition
+
+WeatherSnapshot + WeatherCondition
+                ↓
+      AiWeatherPresentationService
+                ↓
+              Ollama
+                ↓
+        validated WeatherPresentation
+                ↓
+              Vue.js
 ```
 
-Ключевое правило:
+Ключевой принцип: **Open-Meteo является источником фактических погодных данных. Ollama отвечает только за их презентацию и не может изменять фактические значения или придумывать новые визуальные ассеты.**
 
-> **Open-Meteo является источником фактических погодных данных. `WeatherSnapshot` представляет нормализованные факты. `WeatherCondition` определяется детерминированной логикой приложения. Ollama используется только как AI Presentation Layer и не должна изменять фактические погодные данные.**
+### Основные внутренние структуры
 
-## Технологический стек
+`WeatherSnapshot` — нормализованные погодные данные приложения.
 
-**Backend**
-- Laravel 13
-- Laravel HTTP Client
-- Laravel Cache
-- Laravel Queue
-- Laravel Sanctum
-- PostgreSQL
-
-**AI**
-- Laravel AI SDK
-- Ollama
-- Локальная LLM
-
-**Frontend**
-- Vue.js 3
-- Chart.js 4.x
-- TailwindCSS
-
-**Infrastructure**
-- Docker
-- Laravel Sail
-- Redis
-- Ubuntu
-
-**External API**
-- Open-Meteo
-
-## Доменные / прикладные сущности
-
-### Пользовательские настройки
-
-У каждого пользователя есть одна активная конфигурация погоды, хранящаяся в PostgreSQL.
-
-Конфигурация содержит:
-
-- latitude
-- longitude
-- forecast period
-- temperature
-- apparent temperature
-- relative humidity
-- precipitation
-- weather code
-- cloud cover
-- pressure
-- wind speed
-- wind direction
-- wind gusts
-
-Boolean-настройки погоды определяют **то, что отображается пользователю**, а не то, какие данные запрашиваются у Open-Meteo.
-
-Например:
-
-```text
-temperature = true
-pressure = true
-wind_speed = false
-```
-
-означает, что приложение может получить все необходимые погодные данные, а frontend отображает температуру и давление, но не скорость ветра.
-
-### WeatherSnapshot
-
-`WeatherSnapshot` — нормализованное внутреннее представление фактических погодных данных.
-
-Он содержит такие значения, как:
-
-- latitude
-- longitude
-- timestamp
-- temperature
-- apparent temperature
-- relative humidity
-- precipitation
-- weather code
-- cloud cover
-- pressure
-- wind speed
-- wind direction
-- wind gusts
-
-`WeatherSnapshot` не содержит AI-генерируемых данных.
-
-### WeatherCondition
-
-`WeatherCondition` — детерминированная семантическая классификация, рассчитываемая приложением.
-
-Закрытый набор значений:
+`WeatherCondition` — детерминированное семантическое состояние погоды:
 
 ```text
 CLEAR
@@ -157,93 +92,7 @@ FOG
 STORM
 ```
 
-LLM не отвечает за определение этого значения.
-
-### Season
-
-Приложение использует закрытый набор времён года:
-
-```text
-SPRING
-SUMMER
-AUTUMN
-WINTER
-```
-
-Время года определяется приложением на основании даты прогноза.
-
-### Визуальные ассеты
-
-ArtyWeather использует заранее подготовленные визуальные ассеты. Ассеты никогда не генерируются во время работы приложения.
-
-Существует две основные категории:
-
-```text
-WeatherIcon
-Landscape
-```
-
-#### WeatherIcon
-
-Существует 8 предопределённых погодных пиктограмм:
-
-```text
-clear
-partly_cloudy
-cloudy
-rain
-heavy_rain
-snow
-fog
-storm
-```
-
-#### Landscape
-
-Приложение использует иллюстрации одной и той же живописной местности. Композиция остаётся неизменной, а время года и погодные условия меняются.
-
-Полный набор содержит:
-
-```text
-8 WeatherCondition × 4 Season = 32 иллюстрации
-```
-
-Логические идентификаторы имеют формат:
-
-```text
-{season}_{weather_condition}
-```
-
-Примеры:
-
-```text
-spring_clear
-summer_rain
-autumn_fog
-winter_snow
-```
-
-Физический путь к ассету никогда не генерируется и не возвращается LLM.
-
-## AI Presentation Layer
-
-Ollama является **единственным AI/LLM-провайдером**, используемым приложением.
-
-AI-слой получает уже обработанные данные приложения:
-
-```text
-WeatherSnapshot
-    +
-WeatherCondition
-    +
-Season
-```
-
-и формирует валидированный `WeatherPresentation`.
-
-### WeatherPresentation
-
-Представление содержит:
+`WeatherPresentation` содержит:
 
 ```text
 weather_condition
@@ -254,714 +103,183 @@ summary
 recommendation
 ```
 
-Пример:
+Визуальные ассеты заранее определены. Используются 8 погодных иконок и 32 варианта `Landscape` (`8 conditions × 4 seasons`). Во время работы приложения новые изображения или идентификаторы ассетов не генерируются.
 
-```json
-{
-  "weather_condition": "RAIN",
-  "season": "AUTUMN",
-  "weather_icon": "rain",
-  "landscape": "autumn_rain",
-  "summary": "Ожидается дождливая осенняя погода.",
-  "recommendation": "Рекомендуется взять зонт."
-}
-```
+## AI Presentation Layer
 
-AI может выбирать только существующие идентификаторы ассетов.
+Вызов Ollama изолирован в `app/Services/AI/OllamaWeatherPresentationClient.php`. AI-сервис получает `WeatherSnapshot`, `WeatherCondition` и `Season`, после чего запрашивает JSON с четырьмя полями: `weather_icon`, `landscape`, `summary`, `recommendation`.
 
-AI не должен:
+Приложение дополнительно проверяет ответ: `weather_icon` и `landscape` должны совпадать с разрешёнными значениями для текущих условий. При ошибке или недоступности Ollama используется детерминированный fallback.
 
-- генерировать изображения;
-- генерировать SVG;
-- генерировать имена файлов;
-- генерировать URL;
-- генерировать пути к файлам;
-- придумывать новые идентификаторы ассетов;
-- выступать источником погодных данных;
-- изменять фактические погодные значения.
-
-Весь структурированный AI output валидируется Laravel перед использованием.
-
-## Backend-архитектура
-
-Проект использует архитектуру **модульного монолита**.
-
-### Presentation Layer
-
-Отвечает за HTTP-запросы и API-ответы.
-
-Примеры:
-
-```text
-routes/api.php
-app/Http/Controllers/Api/
-app/Http/Requests/
-```
-
-Контроллеры не должны содержать бизнес-логику.
-
-### Application Layer
-
-Основным orchestration-сервисом является:
-
-```text
-app/Services/WeatherService.php
-```
-
-Он отвечает за:
-
-1. получение пользовательских настроек;
-2. формирование параметров запроса погоды;
-3. проверку кеша;
-4. вызов клиента Open-Meteo при необходимости;
-5. нормализацию ответа;
-6. формирование `WeatherSnapshot`;
-7. определение `WeatherCondition`;
-8. подготовку ответа для frontend;
-9. постановку AI presentation generation в очередь при необходимости.
-
-### Infrastructure Layer
-
-Доступ к Open-Meteo изолирован в:
-
-```text
-app/Infrastructure/Weather/OpenMeteoClient.php
-```
-
-Клиент отвечает за:
-
-- формирование HTTP-запроса;
-- координаты;
-- период прогноза;
-- погодные переменные;
-- обработку timeout;
-- retry;
-- обработку HTTP-ошибок.
-
-Код приложения не должен напрямую зависеть от структуры JSON Open-Meteo.
-
-### WeatherNormalizer
-
-```text
-app/Services/Weather/WeatherNormalizer.php
-```
-
-Преобразует:
-
-```text
-Open-Meteo JSON
-    ↓
-WeatherSnapshot
-```
-
-Это сохраняет независимость приложения от формата ответа внешнего провайдера.
-
-### AI Service
-
-```text
-app/Services/AI/AiWeatherPresentationService.php
-```
-
-Обязанности включают:
-
-- формирование контекста для LLM;
-- формирование AI prompt;
-- вызов Ollama через Laravel AI integration;
-- запрос структурированного output;
-- валидацию результата;
-- валидацию идентификаторов ассетов;
-- формирование `WeatherPresentation`.
-
-Сервис не получает погодные данные из Open-Meteo.
-
-## Кеширование
-
-Laravel Cache используется для уменьшения количества повторных запросов к Open-Meteo.
-
-Ключ кеша погоды формируется на основании данных, влияющих на фактический запрос погоды, например:
-
-```text
-weather:{latitude}:{longitude}:{forecast_period}
-```
-
-Boolean-настройки отображения пользователя **не должны** входить в ключ кеша погоды, поскольку они влияют только на представление.
-
-Это также позволяет разным пользователям, запрашивающим одну и ту же географическую точку и период прогноза, использовать общий подходящий кешированный результат погоды.
-
-Для AI Presentation используется отдельный кеш. Его ключ может включать:
-
-- координаты;
-- период прогноза;
-- hash нормализованных погодных данных;
-- locale;
-- версию presentation/asset schema при необходимости.
-
-Если соответствующие погодные данные и контекст представления не изменились, приложение должно избегать ненужных вызовов Ollama.
-
-## Асинхронная AI-обработка
-
-Генерация AI Presentation выполняется асинхронно.
-
-```text
-WeatherService
-    ↓
-GenerateWeatherPresentationJob
-    ↓
-Redis Queue
-    ↓
-Queue Worker
-    ↓
-AiWeatherPresentationService
-    ↓
-Ollama
-    ↓
-WeatherPresentation
-```
-
-Job не должен напрямую обращаться к Open-Meteo.
-
-Нормализованные погодные данные, необходимые AI-сервису, передаются через application layer.
-
-Это предотвращает блокировку основного запроса погоды на время генерации AI-ответа.
+Важно: текущий `GET /api/weather/presentation` получает или генерирует presentation непосредственно в рамках HTTP-запроса. `GenerateWeatherPresentationJob` и Redis Queue присутствуют в проекте, но endpoint в текущем состоянии не возвращает промежуточный статус `processing`.
 
 ## API
 
-### `GET /api/weather`
-
-Возвращает текущий прогноз погоды для настроенной точки авторизованного пользователя.
-
-Координаты и период прогноза берутся из `WeatherSettings`.
-
-Приложение может возвращать полный нормализованный набор погодных данных, а frontend отображает только параметры, включённые настройками пользователя.
-
-### `POST /api/weather/refresh`
-
-Принудительно обновляет погодные данные.
-
-Логический процесс:
+Все weather/settings endpoints требуют `auth:sanctum` и ограничены `throttle:api`.
 
 ```text
-POST /api/weather/refresh
-    ↓
-Invalidate weather cache
-    ↓
-Open-Meteo
-    ↓
-Normalize
-    ↓
-WeatherSnapshot
-    ↓
-WeatherCondition
-    ↓
-Response
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+POST   /api/auth/logout
+
+GET    /api/weather
+POST   /api/weather/refresh
+GET    /api/weather/presentation
+
+GET    /api/weather-settings
+PUT    /api/weather-settings
+PATCH  /api/weather-settings
 ```
 
-### `GET /api/weather/presentation`
+Погодные настройки пользователя включают координаты, период прогноза и набор boolean-флагов отображения. Эти флаги определяют представление результата, а не набор фактических данных, получаемых от Open-Meteo.
 
-Возвращает состояние AI Presentation.
-
-Пока генерация выполняется:
-
-```json
-{
-  "status": "processing"
-}
-```
-
-После завершения:
-
-```json
-{
-  "status": "ready",
-  "presentation": {
-    "weather_condition": "RAIN",
-    "season": "AUTUMN",
-    "weather_icon": "rain",
-    "landscape": "autumn_rain",
-    "summary": "Ожидается дождливая осенняя погода.",
-    "recommendation": "Рекомендуется взять зонт."
-  }
-}
-```
-
-## Аутентификация
-
-Аутентификация реализована с помощью Laravel Sanctum.
-
-Weather API использует авторизованного пользователя только для определения того, чьи `WeatherSettings` необходимо использовать.
-
-Получение погоды при этом остаётся отделённым от логики аутентификации.
-
-## Frontend
-
-Frontend реализован на Vue.js 3.
-
-Основные разделы приложения:
-
-- **Weather Overview**
-- **Dashboard**
-
-### Weather Overview
-
-Основной экран погоды содержит:
-
-- текущую погоду;
-- географическую точку;
-- текущую температуру;
-- WeatherCondition;
-- WeatherIcon;
-- выбранные погодные параметры;
-- Weather Landscape;
-- прогноз;
-- погодные графики;
-- AI Weather Presentation.
-
-Отображаются только погодные параметры, включённые в `WeatherSettings`.
-
-### Weather Charts
-
-Chart.js 4.x используется для визуализации временных рядов погодных данных.
-
-Основные графики:
-
-- Temperature Chart
-- Pressure Chart
-- Wind Chart
-- Precipitation Chart
-
-Графики:
-
-- используют нормализованные погодные данные;
-- охватывают выбранный период прогноза;
-- используют временную шкалу;
-- отображают соответствующие единицы измерения;
-- являются responsive;
-- поддерживают интерактивное отображение значений точек;
-- отображаются только при включённой соответствующей настройке;
-- не содержат бизнес-логики.
-
-### Dashboard
-
-Dashboard позволяет пользователю настроить:
-
-- latitude;
-- longitude;
-- forecast period;
-- отображаемые погодные параметры;
-- locale;
-- theme.
-
-Изменение настроек отображения не должно вызывать новый запрос погоды, если исходные погодные данные всё ещё актуальны.
-
-### Состояния приложения
-
-Frontend поддерживает:
-
-- initial loading;
-- weather loading;
-- weather loaded;
-- AI presentation processing;
-- AI presentation ready;
-- partial AI failure;
-- Open-Meteo error;
-- network error;
-- invalid user settings;
-- empty weather data.
-
-Если Ollama недоступна, фактические погодные данные должны оставаться доступными.
-
-Если AI-слой завершается ошибкой, backend может предоставить fallback-представление на основе `WeatherCondition` и `Season`.
-
-### Адаптивный дизайн
-
-Интерфейс поддерживает:
-
-- desktop;
-- tablet;
-- mobile.
-
-Карточки погоды, графики и иллюстрации Landscape должны оставаться читаемыми и удобными на небольших экранах.
-
-## Обработка ошибок и отказоустойчивость
-
-Приложение обрабатывает:
-
-- timeout Open-Meteo;
-- HTTP 4xx/5xx Open-Meteo;
-- недоступность Open-Meteo;
-- некорректные координаты;
-- некорректные периоды прогноза;
-- недоступность Ollama;
-- AI timeout;
-- ошибки очереди;
-- отсутствие пользовательских настроек;
-- некорректный structured output Ollama;
-- недопустимые идентификаторы WeatherIcon;
-- недопустимые идентификаторы Landscape.
-
-Для запросов к внешнему API используется ограниченная стратегия retry.
-
-Если Open-Meteo временно недоступен и существует подходящий кешированный результат, приложение может вернуть кешированные погодные данные с соответствующим статусом.
-
-Если Ollama недоступна, фактические погодные данные должны оставаться доступными.
-
-Генерация изображений во время работы приложения запрещена.
-
-## Rate Limiting
-
-Rate limiting следует применять к основным погодным endpoint'ам, особенно:
-
-```text
-/api/weather
-/api/weather/refresh
-/api/weather/presentation
-```
-
-Цель — предотвращение случайного чрезмерного количества запросов, защита внешнего погодного API и предотвращение повторной AI-генерации.
-
-## Локализация и тема
-
-Приложение поддерживает как минимум два языка интерфейса.
-
-Приложение также поддерживает тёмную тему.
-
-Локаль и тема являются частью пользовательских настроек и синхронизируются с frontend.
-
-## План разработки
-
-### Итерация 1 — Окружение
-
-- Laravel 13
-- Laravel Sail
-- PostgreSQL
-- Redis
-- Sanctum
-- базовая аутентификация
-- Git
-
-**Результат:** работающее backend-окружение с аутентификацией.
-
-### Итерация 2 — Пользовательские настройки
-
-- WeatherSettings
-- координаты
-- период прогноза
-- параметры отображения
-- API настроек
-- Dashboard
-
-**Результат:** пользователи могут настроить отображение погоды.
-
-### Итерация 3 — Интеграция Open-Meteo
-
-- OpenMeteoClient
-- WeatherService
-- WeatherNormalizer
-- WeatherSnapshot
-- WeatherConditionResolver
-- WeatherCondition
-- обработка HTTP-ошибок
-- retry
-- получение прогноза
-
-**Результат:** нормализованные погодные данные и детерминированное погодное состояние.
-
-### Итерация 4 — Cache
-
-- Laravel Cache
-- weather cache key
-- TTL
-- cache hit/miss
-- принудительное обновление
-- защита от повторных запросов
-
-**Результат:** уменьшение количества обращений к внешнему API.
-
-### Итерация 5 — Frontend
-
-- Vue.js 3
-- Weather Overview
-- Dashboard
-- Chart.js
-- график температуры
-- график давления
-- график ветра
-- график осадков
-- визуализация прогноза
-- выбранные погодные параметры
-- WeatherIcon
-- Landscape
-
-**Результат:** полноценный интерфейс визуализации погоды.
-
-### Итерация 6 — AI Presentation Layer
-
-- интеграция Ollama
-- AI prompt builder
-- AiWeatherPresentationService
-- GenerateWeatherPresentationJob
-- Redis Queue
-- Queue Worker
-- structured output
-- валидация AI response
-- WeatherPresentation
-- предопределённые визуальные ассеты
-- AI summary
-- AI recommendation
-- AI Presentation cache
-- fallback presentation
-- интеграция с frontend
-
-**Результат:** представление уже обработанных погодных данных с помощью локальной LLM.
-
-### Итерация 7 — Полировка
-
-- локализация
-- тёмная тема
-- rate limiting
-- оптимизация кеша
-- обработка ошибок
-- тесты WeatherConditionResolver
-- тесты WeatherPresentation
-- тесты structured output
-- тесты валидации идентификаторов ассетов
-- тесты fallback
-- документация
-- screenshots
-
-**Результат:** PET-проект, готовый для портфолио.
-
-## Развёртывание
-
-ArtyWeather рассчитан на запуск в контейнеризированном окружении разработки с использованием Docker и Laravel Sail.
+## Запуск через Laravel Sail
 
 ### Требования
 
-- Docker
-- Docker Compose
-- Git
-- Ollama для AI Presentation Layer
+- Docker и Docker Compose;
+- Git;
+- Ollama — только для AI Presentation Layer.
 
-### Окружение
+Laravel Sail используется как основное окружение приложения. `compose.yaml` поднимает три сервиса: Laravel, PostgreSQL и Redis. Ollama в compose-файл не входит и предполагается запущенным на хост-машине. Контейнер Laravel обращается к нему через `host.docker.internal`.
 
-Создайте файл окружения приложения на основе примера проекта:
+### Установка
+
+Клонируйте репозиторий и перейдите в каталог проекта:
+
+```bash
+git clone https://github.com/KozyrOK/ArtyWeather.git
+cd ArtyWeather
+```
+
+Создайте `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Настройте необходимые параметры приложения, PostgreSQL, Redis и Ollama в `.env`.
+Перед запуском убедитесь, что Ollama установлена на хосте и нужная модель загружена.
 
-Модель Ollama управляется локальной установкой Ollama и не хранится в репозитории.
+### Запуск
 
-### Запуск приложения
-
-Запустите окружение Sail:
-
-```bash
-./vendor/bin/sail up -d
-```
-
-Установите PHP-зависимости:
+На чистом checkout зависимости Composer и npm отсутствуют, поэтому сначала установите их. Выполните:
 
 ```bash
 ./vendor/bin/sail composer install
-```
-
-Установите frontend-зависимости:
-
-```bash
 ./vendor/bin/sail npm install
-```
-
-Сгенерируйте ключ приложения:
-
-```bash
 ./vendor/bin/sail artisan key:generate
-```
-
-Выполните миграции:
-
-```bash
 ./vendor/bin/sail artisan migrate
+./vendor/bin/sail up -d
 ```
 
-Запустите frontend development server:
+После запуска откройте:
+
+```text
+http://localhost:8080
+```
+
+Порт `8080` задан в `.env.example` через `APP_PORT=8080`. PostgreSQL внутри Sail доступен приложению на `pgsql:5432`; наружу он проброшен на `5433` по умолчанию. Redis доступен приложению как `redis:6379`.
+
+### Frontend
+
+Для Vite в режиме разработки:
 
 ```bash
 ./vendor/bin/sail npm run dev
 ```
 
-Соберите frontend для production:
+Порт Vite берётся из `VITE_PORT` (по умолчанию `5173`). Для production-сборки:
 
 ```bash
 ./vendor/bin/sail npm run build
 ```
 
-### Redis Queue Worker
-
-Для генерации AI Presentation необходим запущенный queue worker.
-
-Для локальной разработки:
-
-```bash
-./vendor/bin/sail artisan queue:work
-```
-
 ### Ollama
 
-Установите и управляйте Ollama отдельно от приложения.
+Ollama работает **вне Docker**, на хост-машине.
 
-Проверьте установку:
+Проверка:
 
 ```bash
 ollama --version
-```
-
-Проверьте доступные модели:
-
-```bash
 ollama list
 ```
 
-Конкретная модель намеренно не фиксируется в этом README, поскольку техническое задание определяет **Ollama как единственного LLM-провайдера**, а конкретная локальная модель может быть настроена для конкретного окружения разработки.
+Актуальный `config/ai.php` использует следующие переменные окружения:
 
-Когда Laravel работает внутри Docker, а Ollama — на хост-машине, необходимо настроить приложение так, чтобы контейнер мог обращаться к API Ollama на хосте.
-
-## Полезные команды
-
-Остановить окружение:
-
-```bash
-./vendor/bin/sail down
+```text
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=...
+OLLAMA_TIMEOUT=30
+OLLAMA_RETRIES=1
 ```
 
-Перезапустить окружение:
+> В текущем `.env.example` пока указаны `OLLAMA_URL` и `AI_MODEL`, тогда как `config/ai.php` читает `OLLAMA_BASE_URL` и `OLLAMA_MODEL`. Для работы AI значения `.env` необходимо привести в соответствие с `config/ai.php`.
 
-```bash
-./vendor/bin/sail up -d
-```
+### Queue worker
 
-Просмотреть логи приложения:
-
-```bash
-./vendor/bin/sail logs
-```
-
-Получить доступ к контейнеру приложения:
-
-```bash
-./vendor/bin/sail shell
-```
-
-Выполнить миграции:
-
-```bash
-./vendor/bin/sail artisan migrate
-```
-
-Запустить тесты:
-
-```bash
-./vendor/bin/sail artisan test
-```
-
-Запустить queue worker:
+В проекте есть `GenerateWeatherPresentationJob`, использующий Redis Queue. Worker запускается командой:
 
 ```bash
 ./vendor/bin/sail artisan queue:work
 ```
 
-## Итоговая архитектура
+При этом текущий `GET /api/weather/presentation` вызывает `AiWeatherPresentationService` непосредственно, поэтому worker не требуется для самого этого endpoint.
 
-```text
-                         ┌─────────────────┐
-                         │    PostgreSQL   │
-                         │                 │
-                         │ User            │
-                         │ WeatherSettings │
-                         └────────┬────────┘
-                                  │
-                                  ↓
-┌──────────┐              ┌─────────────────┐
-│ Vue.js   │ ───────────→ │ WeatherService  │
-└──────────┘              └────────┬────────┘
-                                   │
-                                   ↓
-                            ┌───────────────┐
-                            │ Cache         │
-                            └───────┬───────┘
-                                    │ MISS
-                                    ↓
-                          ┌──────────────────┐
-                          │ OpenMeteoClient  │
-                          └────────┬─────────┘
-                                   ↓
-                            ┌─────────────┐
-                            │ Open-Meteo  │
-                            └──────┬──────┘
-                                   ↓
-                         ┌──────────────────┐
-                         │ WeatherNormalizer│
-                         └────────┬─────────┘
-                                  ↓
-                         ┌─────────────────┐
-                         │WeatherSnapshot  │
-                         └───────┬─────────┘
-                                 ↓
-                    ┌─────────────────────────┐
-                    │ WeatherConditionResolver│
-                    └───────────┬─────────────┘
-                                ↓
-                       ┌────────────────┐
-                       │WeatherCondition│
-                       └───────┬────────┘
-                               │
-                               ↓
-                 ┌──────────────────────────────┐
-                 │GenerateWeatherPresentationJob│
-                 └──────────────┬───────────────┘
-                                ↓
-                           Redis Queue
-                                ↓
-                          Queue Worker
-                                ↓
-                 ┌─────────────────────────────┐
-                 │AiWeatherPresentationService │
-                 └──────────────┬──────────────┘
-                                ↓
-                              Ollama
-                                ↓
-                         Structured JSON
-                                ↓
-                           Validation
-                                ↓
-                 ┌─────────────────────────┐
-                 │   WeatherPresentation   │
-                 └────────────┬────────────┘
-                              │
-               ┌──────────────┼──────────────┐
-               ↓              ↓              ↓
-        WeatherIcon       Landscape       Summary
-               │              │              │
-               └──────────────┼──────────────┘
-                              ↓
-                           Vue.js
-                              ↓
-                    Visual Presentation
+### Полезные команды
+
+```bash
+./vendor/bin/sail up -d
+./vendor/bin/sail down
+./vendor/bin/sail restart
+./vendor/bin/sail logs
+./vendor/bin/sail shell
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan test
 ```
 
-## Ключевые архитектурные правила
+## Конфигурация по умолчанию
 
-1. **Open-Meteo является источником фактических погодных данных.**
-2. **WeatherSnapshot содержит только нормализованные фактические данные.**
-3. **WeatherCondition определяется приложением детерминированно.**
-4. **Ollama является единственным LLM-провайдером.**
-5. **Ollama является AI Presentation Layer, а не источником погодных данных.**
-6. **AI получает нормализованные данные приложения, а не необработанный ответ внешнего API.**
-7. **AI может выбирать только предопределённые идентификаторы WeatherIcon и Landscape.**
-8. **AI-генерируемые идентификаторы ассетов всегда должны проходить валидацию.**
-9. **Во время работы приложения изображения и новые визуальные ассеты не генерируются.**
-10. **Boolean-настройки отображения пользователя не влияют на ключ кеша погоды.**
-11. **Сбой AI не должен делать фактические погодные данные недоступными.**
-12. **Frontend-компоненты не должны зависеть от исходной структуры ответа Open-Meteo или Ollama.**
+При отсутствии `WeatherSettings` приложение создаёт настройки по умолчанию:
+
+```text
+latitude:         55.75583
+longitude:        37.61722
+forecast_period: 7
+```
+
+Все доступные погодные параметры отображения по умолчанию включены.
+
+## Структура проекта
+
+```text
+app/
+├── DTO/
+│   ├── AI/
+│   └── Weather/
+├── Http/
+│   ├── Controllers/Api/
+│   ├── Requests/
+│   └── Resources/
+├── Infrastructure/Weather/
+└── Services/
+    ├── AI/
+    └── Weather/
+
+resources/
+├── js/          # Vue.js
+└── css/         # Tailwind CSS
+
+routes/
+├── api.php
+└── web.php
+
+compose.yaml
+.env.example
+```
+
+## Дополнительная документация
+
+Подробное архитектурное и техническое описание проекта находится в [`Technical_specifications.md`](./Technical_specifications.md).

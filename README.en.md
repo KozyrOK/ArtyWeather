@@ -7,810 +7,210 @@
 
 # ArtyWeather
 
-**ArtyWeather** is a Laravel-based PET project for obtaining practical experience with modern web application development, external REST APIs, caching, asynchronous processing, Vue.js, Chart.js, and local LLM integration.
+**ArtyWeather** is a Laravel PET project for retrieving and presenting weather forecasts.
 
-The application retrieves weather forecasts for a user-defined geographic location through the free **Open-Meteo API** and presents the normalized weather data through a Vue.js interface.
+The application retrieves weather data from the free **Open-Meteo API**, normalizes it, and displays it through a **Vue.js 3** frontend.
 
-A local **Ollama** LLM is used only as an **AI Presentation Layer**. It does not provide weather data and does not replace the deterministic application logic used to determine weather conditions.
+A local **Ollama** LLM is additionally used as an **AI Presentation Layer**. AI does not determine factual weather conditions. It receives already processed application data and generates a short description, recommendation, and selection of predefined visual assets.
 
-## Project Goals
+## Features
 
-- Practice modern Laravel application architecture
-- Work with an external REST API
-- Implement a modular monolith
-- Apply a Service Layer and infrastructure abstractions
-- Normalize external API responses into application DTO/domain structures
-- Implement Laravel Cache and Redis
-- Implement asynchronous processing with Laravel Queue
-- Build a Vue.js 3 frontend
-- Visualize weather time series with Chart.js
-- Integrate a local LLM through Ollama
-- Implement structured AI output and strict validation
-- Practice graceful degradation when external services are unavailable
-- Build a portfolio-ready PET project
-
-## Core Architecture Principle
-
-ArtyWeather explicitly separates **factual weather data** from **AI-generated presentation**.
-
-```text
-Open-Meteo
-    ↓
-WeatherNormalizer
-    ↓
-WeatherSnapshot
-    ↓
-WeatherCondition
-    ↓
-AI Presentation Layer
-    ↓
-Ollama
-    ↓
-WeatherPresentation
-    ↓
-Vue.js
-```
-
-The key rule is:
-
-> **Open-Meteo is the source of factual weather data. `WeatherSnapshot` represents normalized facts. `WeatherCondition` is determined by deterministic application logic. Ollama is used only as an AI Presentation Layer and must not modify factual weather data.**
+* weather forecast for configurable coordinates;
+* configurable forecast period;
+* selectable weather display parameters;
+* weather data caching;
+* Laravel Sanctum authentication;
+* Vue.js 3 frontend;
+* weather charts using Chart.js;
+* deterministic `WeatherCondition`;
+* local AI presentation through Ollama;
+* structured JSON output with validation;
+* predefined weather icons and landscape illustrations;
+* fallback presentation when AI is unavailable;
+* Redis and Laravel Queue;
+* API rate limiting;
+* localization and dark theme.
 
 ## Tech Stack
 
-**Backend**
-- Laravel 13
-- Laravel HTTP Client
-- Laravel Cache
-- Laravel Queue
-- Laravel Sanctum
-- PostgreSQL
+| Area           | Technologies                                               |
+| -------------- | ---------------------------------------------------------- |
+| Backend        | Laravel 13, PHP 8.3+, Laravel Sanctum, Laravel HTTP Client |
+| Database       | PostgreSQL 18                                              |
+| Cache / Queue  | Redis, Laravel Cache, Laravel Queue                        |
+| Frontend       | Vue.js 3, Vite, Tailwind CSS 4, Chart.js 4                 |
+| AI             | Ollama, local LLM                                          |
+| Infrastructure | Docker, Laravel Sail                                       |
+| Weather API    | Open-Meteo                                                 |
 
-**AI**
-- Laravel AI SDK
-- Ollama
-- Local LLM
+## Architecture
 
-**Frontend**
-- Vue.js 3
-- Chart.js 4.x
-- TailwindCSS
+The project follows a modular monolith architecture.
 
-**Infrastructure**
-- Docker
-- Laravel Sail
-- Redis
-- Ubuntu
-
-**External API**
-- Open-Meteo
-
-## Domain / Application Concepts
-
-### User Settings
-
-Each user has one active weather configuration stored in PostgreSQL.
-
-The configuration contains:
-
-- latitude
-- longitude
-- forecast period
-- temperature
-- apparent temperature
-- relative humidity
-- precipitation
-- weather code
-- cloud cover
-- pressure
-- wind speed
-- wind direction
-- wind gusts
-
-The boolean weather settings determine **what is displayed to the user**, not which data is requested from Open-Meteo.
-
-For example:
+The main architectural principle is the strict separation of factual weather data from AI presentation:
 
 ```text
-temperature = true
-pressure = true
-wind_speed = false
-```
-
-means that the application may retrieve all required weather data, while the frontend displays temperature and pressure but not wind speed.
-
-### WeatherSnapshot
-
-`WeatherSnapshot` is the normalized internal representation of factual weather data.
-
-It contains values such as:
-
-- latitude
-- longitude
-- timestamp
-- temperature
-- apparent temperature
-- relative humidity
-- precipitation
-- weather code
-- cloud cover
-- pressure
-- wind speed
-- wind direction
-- wind gusts
-
-`WeatherSnapshot` contains no AI-generated data.
-
-### WeatherCondition
-
-`WeatherCondition` is a deterministic semantic classification calculated by the application.
-
-The closed set is:
-
-```text
-CLEAR
-PARTLY_CLOUDY
-CLOUDY
-RAIN
-HEAVY_RAIN
-SNOW
-FOG
-STORM
-```
-
-The LLM is not responsible for determining this value.
-
-### Season
-
-The application uses a closed set of seasons:
-
-```text
-SPRING
-SUMMER
-AUTUMN
-WINTER
-```
-
-The season is determined by the application from the forecast date.
-
-### Visual Assets
-
-ArtyWeather uses predefined visual assets. Assets are never generated at runtime.
-
-There are two main categories:
-
-```text
-WeatherIcon
-Landscape
-```
-
-#### WeatherIcon
-
-There are 8 predefined weather icons:
-
-```text
-clear
-partly_cloudy
-cloudy
-rain
-heavy_rain
-snow
-fog
-storm
-```
-
-#### Landscape
-
-The application uses illustrations of the same scenic landscape. The composition remains consistent while the season and weather conditions change.
-
-The complete set contains:
-
-```text
-8 WeatherCondition × 4 Season = 32 illustrations
-```
-
-Logical identifiers follow the pattern:
-
-```text
-{season}_{weather_condition}
-```
-
-Examples:
-
-```text
-spring_clear
-summer_rain
-autumn_fog
-winter_snow
-```
-
-The physical asset path is never generated or returned by the LLM.
-
-## AI Presentation Layer
-
-Ollama is the **only AI/LLM provider** used by the application.
-
-The AI layer receives already processed application data:
-
-```text
-WeatherSnapshot
-    +
-WeatherCondition
-    +
-Season
-```
-
-and produces a validated `WeatherPresentation`.
-
-### WeatherPresentation
-
-The presentation contains:
-
-```text
-weather_condition
-season
-weather_icon
-landscape
-summary
-recommendation
-```
-
-Example:
-
-```json
-{
-  "weather_condition": "RAIN",
-  "season": "AUTUMN",
-  "weather_icon": "rain",
-  "landscape": "autumn_rain",
-  "summary": "Rainy autumn weather is expected.",
-  "recommendation": "It is recommended to take an umbrella."
-}
-```
-
-The AI may select only existing asset identifiers.
-
-It must not:
-
-- generate images
-- generate SVG
-- generate filenames
-- generate URLs
-- generate filesystem paths
-- invent new asset identifiers
-- act as a weather-data source
-- modify factual weather values
-
-All AI structured output is validated by Laravel before it is used.
-
-## Backend Architecture
-
-The project follows a **modular monolith** architecture.
-
-### Presentation Layer
-
-Responsible for HTTP requests and API responses.
-
-Examples:
-
-```text
-routes/api.php
-app/Http/Controllers/Api/
-app/Http/Requests/
-```
-
-Controllers must not contain business logic.
-
-### Application Layer
-
-The main orchestration service is:
-
-```text
-app/Services/WeatherService.php
-```
-
-It is responsible for:
-
-1. obtaining user settings;
-2. building weather request parameters;
-3. checking cache;
-4. calling the Open-Meteo client when required;
-5. normalizing the response;
-6. producing `WeatherSnapshot`;
-7. determining `WeatherCondition`;
-8. preparing the response for the frontend;
-9. dispatching AI presentation generation when required.
-
-### Infrastructure Layer
-
-Open-Meteo access is isolated in:
-
-```text
-app/Infrastructure/Weather/OpenMeteoClient.php
-```
-
-The client is responsible for:
-
-- HTTP request construction
-- coordinates
-- forecast period
-- weather variables
-- timeout handling
-- retry handling
-- HTTP error handling
-
-Application code must not depend directly on the Open-Meteo JSON structure.
-
-### WeatherNormalizer
-
-```text
-app/Services/Weather/WeatherNormalizer.php
-```
-
-Transforms:
-
-```text
-Open-Meteo JSON
-    ↓
-WeatherSnapshot
-```
-
-This keeps the application independent from the external provider's response format.
-
-### AI Service
-
-```text
-app/Services/AI/AiWeatherPresentationService.php
-```
-
-Responsibilities include:
-
-- building the LLM context
-- building the AI prompt
-- calling Ollama through the Laravel AI integration
-- requesting structured output
-- validating the result
-- validating asset identifiers
-- producing `WeatherPresentation`
-
-The service does not retrieve weather data from Open-Meteo.
-
-## Caching
-
-Laravel Cache is used to reduce repeated requests to Open-Meteo.
-
-The weather cache key is based on data that affects the actual weather request, such as:
-
-```text
-weather:{latitude}:{longitude}:{forecast_period}
-```
-
-User display booleans must **not** be part of the weather cache key because they affect presentation only.
-
-This also allows different users requesting the same location and forecast period to reuse an appropriate cached weather result.
-
-AI Presentation uses a separate cache. Its key may include:
-
-- coordinates
-- forecast period
-- a hash of normalized weather data
-- locale
-- presentation/asset schema version when required
-
-If the relevant weather data and presentation context have not changed, the application should avoid unnecessary calls to Ollama.
-
-## Asynchronous AI Processing
-
-AI Presentation generation is performed asynchronously.
-
-```text
-WeatherService
-    ↓
-GenerateWeatherPresentationJob
-    ↓
-Redis Queue
-    ↓
-Queue Worker
-    ↓
-AiWeatherPresentationService
-    ↓
-Ollama
-    ↓
-WeatherPresentation
-```
-
-The job must not call Open-Meteo directly.
-
-The normalized weather data required by the AI service is passed through the application layer.
-
-This prevents AI generation from blocking the main weather request.
-
-## API
-
-### `GET /api/weather`
-
-Returns the current weather forecast for the authenticated user's configured location.
-
-The location and forecast period are taken from `WeatherSettings`.
-
-The application may return the complete normalized weather dataset, while the frontend displays only the parameters enabled by the user's settings.
-
-### `POST /api/weather/refresh`
-
-Forces a weather refresh.
-
-Logical flow:
-
-```text
-POST /api/weather/refresh
-    ↓
-Invalidate weather cache
-    ↓
 Open-Meteo
-    ↓
-Normalize
-    ↓
+     ↓
+OpenMeteoClient
+     ↓
+WeatherNormalizer
+     ↓
 WeatherSnapshot
-    ↓
+     ↓
+WeatherConditionResolver
+     ↓
 WeatherCondition
-    ↓
-Response
+     │
+     ├──────────────→ Vue.js
+     │
+     ↓
+AiWeatherPresentationService
+     ↓
+Ollama
+     ↓
+WeatherPresentation
+     ↓
+Vue.js
 ```
 
-### `GET /api/weather/presentation`
+**Open-Meteo is the source of factual weather data. Ollama is used only for presentation and must not modify factual weather values.**
 
-Returns the AI Presentation state.
+AI can select only predefined visual assets.
 
-While generation is running:
-
-```json
-{
-  "status": "processing"
-}
-```
-
-When ready:
-
-```json
-{
-  "status": "ready",
-  "presentation": {
-    "weather_condition": "RAIN",
-    "season": "AUTUMN",
-    "weather_icon": "rain",
-    "landscape": "autumn_rain",
-    "summary": "Rainy autumn weather is expected.",
-    "recommendation": "It is recommended to take an umbrella."
-  }
-}
-```
-
-## Authentication
-
-Authentication is implemented with Laravel Sanctum.
-
-The weather API uses the authenticated user only to determine whose `WeatherSettings` should be used.
-
-Weather retrieval itself remains separate from authentication logic.
-
-## Frontend
-
-The frontend is implemented with Vue.js 3.
-
-The main application areas are:
-
-- **Weather Overview**
-- **Dashboard**
-
-### Weather Overview
-
-The main weather screen contains:
-
-- current weather
-- geographic location
-- current temperature
-- WeatherCondition
-- WeatherIcon
-- selected weather parameters
-- Weather Landscape
-- forecast
-- weather charts
-- AI Weather Presentation
-
-Only weather parameters enabled in `WeatherSettings` are displayed.
-
-### Weather Charts
-
-Chart.js 4.x is used for weather time-series visualization.
-
-Main charts:
-
-- Temperature Chart
-- Pressure Chart
-- Wind Chart
-- Precipitation Chart
-
-The charts:
-
-- use normalized weather data
-- cover the selected forecast period
-- use a time scale
-- display appropriate measurement units
-- support responsive layouts
-- provide interactive point values
-- are shown only when the corresponding weather parameter is enabled
-- contain no business logic
-
-### Dashboard
-
-The Dashboard allows the user to configure:
-
-- latitude
-- longitude
-- forecast period
-- displayed weather parameters
-- locale
-- theme
-
-Changing display preferences should not trigger a new weather request when the underlying weather data is still valid.
-
-### Application States
-
-The frontend supports:
-
-- initial loading
-- weather loading
-- weather loaded
-- AI presentation processing
-- AI presentation ready
-- partial AI failure
-- Open-Meteo error
-- network error
-- invalid user settings
-- empty weather data
-
-If Ollama is unavailable, factual weather data must remain available.
-
-If the AI layer fails, the backend may provide a fallback presentation based on `WeatherCondition` and `Season`.
-
-### Responsive Design
-
-The interface supports:
-
-- desktop
-- tablet
-- mobile
-
-Weather cards, charts, and landscape illustrations must remain readable and usable on smaller screens.
-
-## Error Handling and Resilience
-
-The application handles:
-
-- Open-Meteo timeouts
-- Open-Meteo HTTP 4xx/5xx responses
-- Open-Meteo unavailability
-- invalid coordinates
-- invalid forecast periods
-- Ollama unavailability
-- AI timeouts
-- queue failures
-- missing user settings
-- invalid Ollama structured output
-- invalid WeatherIcon identifiers
-- invalid Landscape identifiers
-
-External API requests use a limited retry strategy.
-
-If Open-Meteo is temporarily unavailable and an appropriate cached result exists, the application may return cached weather data with an appropriate status.
-
-If Ollama is unavailable, factual weather data must remain usable.
-
-No runtime image generation is allowed.
-
-## Rate Limiting
-
-Rate limiting should be applied to the main weather endpoints, especially:
+The application contains:
 
 ```text
-/api/weather
-/api/weather/refresh
-/api/weather/presentation
+8 WeatherCondition
+×
+4 Season
+=
+32 Landscape illustrations
 ```
 
-The purpose is to prevent accidental excessive requests, protect the external weather API, and avoid repeated AI generation.
+No images are generated at runtime.
 
-## Localization and Theme
+---
 
-The application supports at least two interface languages.
+# Installation and Deployment
 
-The application also supports a dark theme.
+ArtyWeather runs in Docker using **Laravel Sail**.
 
-Locale and theme are part of user settings and are synchronized with the frontend.
+PHP, Composer, Node.js, and PostgreSQL do not need to be installed directly on the host system for normal local development. They run inside the Docker environment.
 
-## Development Roadmap
+## Requirements
 
-### Iteration 1 — Environment
+The host system needs:
 
-- Laravel 13
-- Laravel Sail
-- PostgreSQL
-- Redis
-- Sanctum
-- basic authentication
-- Git
+* Docker;
+* Docker Compose;
+* Git;
+* Ollama, if the AI Presentation Layer is required.
 
-**Result:** working authenticated backend environment.
+A local Ollama model is also required for AI functionality.
 
-### Iteration 2 — User Settings
+---
 
-- WeatherSettings
-- coordinates
-- forecast period
-- display parameters
-- settings API
-- Dashboard
+## 1. Clone the repository
 
-**Result:** users can configure their weather view.
+Clone the repository:
 
-### Iteration 3 — Open-Meteo Integration
+```bash
+git clone https://github.com/KozyrOK/ArtyWeather.git
+```
 
-- OpenMeteoClient
-- WeatherService
-- WeatherNormalizer
-- WeatherSnapshot
-- WeatherConditionResolver
-- WeatherCondition
-- HTTP error handling
-- retry
-- forecast retrieval
+Enter the project directory:
 
-**Result:** normalized weather data and deterministic weather conditions.
+```bash
+cd ArtyWeather
+```
 
-### Iteration 4 — Cache
+---
 
-- Laravel Cache
-- weather cache key
-- TTL
-- cache hit/miss
-- forced refresh
-- duplicate-request protection
+## 2. Create the environment file
 
-**Result:** reduced external API usage.
-
-### Iteration 5 — Frontend
-
-- Vue.js 3
-- Weather Overview
-- Dashboard
-- Chart.js
-- temperature chart
-- pressure chart
-- wind chart
-- precipitation chart
-- forecast visualization
-- selected weather parameters
-- WeatherIcon
-- Landscape
-
-**Result:** complete weather visualization interface.
-
-### Iteration 6 — AI Presentation Layer
-
-- Ollama integration
-- AI prompt builder
-- AiWeatherPresentationService
-- GenerateWeatherPresentationJob
-- Redis Queue
-- Queue Worker
-- structured output
-- AI response validation
-- WeatherPresentation
-- predefined visual assets
-- AI summary
-- AI recommendation
-- AI Presentation cache
-- fallback presentation
-- frontend integration
-
-**Result:** local LLM-powered presentation of already processed weather data.
-
-### Iteration 7 — Polish
-
-- localization
-- dark theme
-- rate limiting
-- cache optimization
-- error handling
-- WeatherConditionResolver tests
-- WeatherPresentation tests
-- structured output tests
-- asset identifier validation tests
-- fallback tests
-- documentation
-- screenshots
-
-**Result:** portfolio-ready PET project.
-
-## Deployment
-
-ArtyWeather is designed to run in a containerized development environment using Docker and Laravel Sail.
-
-### Requirements
-
-- Docker
-- Docker Compose
-- Git
-- Ollama for the AI Presentation Layer
-
-### Environment
-
-Create the application environment file from the project example:
+Create `.env` from the provided example:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure the required application, PostgreSQL, Redis, and Ollama settings in `.env`.
+**Do not use `.env.example` as the runtime configuration file.**
 
-The Ollama model is managed locally by the Ollama installation and is not stored in the repository.
+`.env.example` is a template. Local configuration belongs in `.env`.
 
-### Start the Application
+Check the main settings:
 
-Start the Sail environment:
+```dotenv
+APP_NAME=ArtyWeather
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8080
 
-```bash
-./vendor/bin/sail up -d
+APP_PORT=8080
+
+DB_CONNECTION=pgsql
+DB_HOST=pgsql
+DB_PORT=5432
+DB_DATABASE=artyweather
+DB_USERNAME=sail
+DB_PASSWORD=password
+
+CACHE_STORE=redis
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+QUEUE_CONNECTION=redis
 ```
 
-Install PHP dependencies:
+---
 
-```bash
-./vendor/bin/sail composer install
+## 3. Configure AI
+
+The AI Presentation Layer uses a local **Ollama** installation running **outside Docker**, on the host machine.
+
+The `.env` AI configuration should contain:
+
+```dotenv
+########################################
+# AI Configuration
+########################################
+
+AI_PROVIDER=ollama
+
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=qwen3:8b
+OLLAMA_TIMEOUT=30
+OLLAMA_RETRIES=1
+
+AI_PRESENTATION_CACHE_TTL=900
+
+########################################
+# Weather Presentation
+########################################
+
+WEATHER_PRESENTATION_QUEUE=weather-presentations
 ```
 
-Install frontend dependencies:
+The variable names must match `config/ai.php`.
 
-```bash
-./vendor/bin/sail npm install
-```
+The settings are:
 
-Generate the application key:
+* `OLLAMA_BASE_URL` — Ollama address accessible from the Laravel container;
+* `OLLAMA_MODEL` — model used by the application;
+* `OLLAMA_TIMEOUT` — Ollama request timeout;
+* `OLLAMA_RETRIES` — retry count;
+* `AI_PRESENTATION_CACHE_TTL` — AI Presentation cache lifetime;
+* `WEATHER_PRESENTATION_QUEUE` — queue name used by the Weather Presentation job.
 
-```bash
-./vendor/bin/sail artisan key:generate
-```
+`WEATHER_PRESENTATION_CACHE_TTL` should not be used because it is not part of the current application configuration.
 
-Run migrations:
+---
 
-```bash
-./vendor/bin/sail artisan migrate
-```
+## 4. Install and configure Ollama
 
-Start the frontend development server:
-
-```bash
-./vendor/bin/sail npm run dev
-```
-
-Build the frontend for production:
-
-```bash
-./vendor/bin/sail npm run build
-```
-
-### Redis Queue Worker
-
-AI Presentation generation requires a running queue worker.
-
-For local development:
-
-```bash
-./vendor/bin/sail artisan queue:work
-```
-
-### Ollama
-
-Install and manage Ollama separately from the application.
+Ollama is installed separately from the ArtyWeather Docker environment.
 
 Verify the installation:
 
@@ -818,150 +218,426 @@ Verify the installation:
 ollama --version
 ```
 
-Verify available models:
+List installed models:
 
 ```bash
 ollama list
 ```
 
-The exact model is intentionally not fixed by this README because the technical specification defines **Ollama as the only LLM provider**, while the concrete local model can be configured for the development environment.
-
-When Laravel runs inside Docker and Ollama runs on the host machine, configure the application so the container can reach the host's Ollama API.
-
-## Useful Commands
-
-Stop the environment:
+If the configured model is not installed, download it:
 
 ```bash
-./vendor/bin/sail down
+ollama pull qwen3:8b
 ```
 
-Restart the environment:
+Check that Ollama responds:
 
 ```bash
-./vendor/bin/sail up -d
+curl http://localhost:11434/api/tags
 ```
 
-View application logs:
+The connection from Docker is:
+
+```text
+Laravel container
+      ↓
+host.docker.internal:11434
+      ↓
+Ollama on host
+```
+
+`host.docker.internal` is configured as a Docker host gateway in `compose.yaml`.
+
+---
+
+## 5. Install PHP dependencies
+
+On a clean checkout, the `vendor` directory does not exist yet.
+
+First start the Docker environment:
 
 ```bash
-./vendor/bin/sail logs
+docker compose up -d --build
 ```
 
-Access the application container:
+Then install Composer dependencies:
 
 ```bash
-./vendor/bin/sail shell
+docker compose exec laravel.test composer install
 ```
 
-Run migrations:
+Alternatively, after `vendor/bin/sail` becomes available:
+
+```bash
+./vendor/bin/sail composer install
+```
+
+---
+
+## 6. Install frontend dependencies
+
+Install npm dependencies:
+
+```bash
+./vendor/bin/sail npm install
+```
+
+---
+
+## 7. Generate the application key
+
+Run:
+
+```bash
+./vendor/bin/sail artisan key:generate
+```
+
+---
+
+## 8. Run database migrations
+
+PostgreSQL is provided by the `pgsql` Docker service.
+
+Run:
 
 ```bash
 ./vendor/bin/sail artisan migrate
 ```
 
-Run tests:
+The database is now initialized.
+
+---
+
+## 9. Seed the database
+
+For the standard initial dataset:
 
 ```bash
-./vendor/bin/sail artisan test
+./vendor/bin/sail artisan db:seed
 ```
 
-Run the queue worker:
+For an extended local development dataset:
+
+```bash
+./vendor/bin/sail artisan db:seed --class=DatabaseSeederTest
+```
+
+This step is optional.
+
+---
+
+# Starting the application
+
+## 10. Start Docker services
+
+The project defines three main services:
+
+```text
+laravel.test
+pgsql
+redis
+```
+
+Start them with:
+
+```bash
+./vendor/bin/sail up -d
+```
+
+Check their status:
+
+```bash
+./vendor/bin/sail ps
+```
+
+Stop them:
+
+```bash
+./vendor/bin/sail down
+```
+
+Restart them:
+
+```bash
+./vendor/bin/sail restart
+```
+
+---
+
+## 11. Clear the configuration cache
+
+After changing `.env`, clear the Laravel configuration cache:
+
+```bash
+./vendor/bin/sail artisan config:clear
+```
+
+This ensures that Laravel reads the current environment values.
+
+---
+
+## 12. Start Vite
+
+For frontend development:
+
+```bash
+./vendor/bin/sail npm run dev
+```
+
+The default Vite port is:
+
+```text
+5173
+```
+
+It can be configured with:
+
+```dotenv
+VITE_PORT=5173
+```
+
+---
+
+## 13. Build frontend assets
+
+For a production build:
+
+```bash
+./vendor/bin/sail npm run build
+```
+
+---
+
+# Application URL
+
+By default, the application is available at:
+
+```text
+http://localhost:8080
+```
+
+The port is configured through:
+
+```dotenv
+APP_PORT=8080
+```
+
+and mapped by `compose.yaml`.
+
+---
+
+# PostgreSQL
+
+PostgreSQL runs as a separate Docker container:
+
+```text
+pgsql:5432
+```
+
+Laravel connects to it using the Docker service name:
+
+```dotenv
+DB_HOST=pgsql
+DB_PORT=5432
+```
+
+From the host system, PostgreSQL is exposed on:
+
+```text
+localhost:5433
+```
+
+The external port is configured through:
+
+```dotenv
+FORWARD_DB_PORT=5433
+```
+
+Do not use `localhost` as `DB_HOST` for Laravel. Inside Docker Compose, Laravel must connect to PostgreSQL through the `pgsql` service name.
+
+---
+
+# Redis
+
+Redis is used for:
+
+* application cache;
+* sessions;
+* AI Presentation cache;
+* Laravel Queue.
+
+Inside Docker:
+
+```text
+redis:6379
+```
+
+The main configuration is:
+
+```dotenv
+CACHE_STORE=redis
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+QUEUE_CONNECTION=redis
+```
+
+---
+
+# Queue Worker
+
+The project contains `GenerateWeatherPresentationJob`, which uses Laravel Queue with Redis.
+
+Start a worker with:
 
 ```bash
 ./vendor/bin/sail artisan queue:work
 ```
 
-## Architecture Summary
+For local development, keep the worker running in a separate terminal.
 
-```text
-                         ┌─────────────────┐
-                         │    PostgreSQL   │
-                         │                 │
-                         │ User            │
-                         │ WeatherSettings │
-                         └────────┬────────┘
-                                  │
-                                  ↓
-┌──────────┐              ┌─────────────────┐
-│ Vue.js   │ ───────────→ │ WeatherService  │
-└──────────┘              └────────┬────────┘
-                                   │
-                                   ↓
-                            ┌───────────────┐
-                            │ Cache         │
-                            └───────┬───────┘
-                                    │ MISS
-                                    ↓
-                          ┌──────────────────┐
-                          │ OpenMeteoClient  │
-                          └────────┬─────────┘
-                                   ↓
-                            ┌─────────────┐
-                            │ Open-Meteo  │
-                            └──────┬──────┘
-                                   ↓
-                         ┌──────────────────┐
-                         │ WeatherNormalizer│
-                         └────────┬─────────┘
-                                  ↓
-                         ┌─────────────────┐
-                         │WeatherSnapshot  │
-                         └───────┬─────────┘
-                                 ↓
-                    ┌─────────────────────────┐
-                    │ WeatherConditionResolver│
-                    └───────────┬─────────────┘
-                                ↓
-                       ┌────────────────┐
-                       │WeatherCondition│
-                       └───────┬────────┘
-                               │
-                               ↓
-                 ┌──────────────────────────────┐
-                 │GenerateWeatherPresentationJob│
-                 └──────────────┬───────────────┘
-                                ↓
-                           Redis Queue
-                                ↓
-                          Queue Worker
-                                ↓
-                 ┌─────────────────────────────┐
-                 │AiWeatherPresentationService │
-                 └──────────────┬──────────────┘
-                                ↓
-                              Ollama
-                                ↓
-                         Structured JSON
-                                ↓
-                           Validation
-                                ↓
-                 ┌─────────────────────────┐
-                 │   WeatherPresentation   │
-                 └────────────┬────────────┘
-                              │
-               ┌──────────────┼──────────────┐
-               ↓              ↓              ↓
-        WeatherIcon       Landscape       Summary
-               │              │              │
-               └──────────────┼──────────────┘
-                              ↓
-                           Vue.js
-                              ↓
-                    Visual Presentation
+Check failed jobs with:
+
+```bash
+./vendor/bin/sail artisan queue:failed
 ```
 
-## Key Design Rules
+### Current implementation note
 
-1. **Open-Meteo is the source of factual weather data.**
-2. **WeatherSnapshot contains normalized factual data only.**
-3. **WeatherCondition is determined deterministically by the application.**
-4. **Ollama is the only LLM provider.**
-5. **Ollama is an AI Presentation Layer, not a weather-data source.**
-6. **AI receives normalized application data, not raw external API data.**
-7. **AI may select only predefined WeatherIcon and Landscape identifiers.**
-8. **AI-generated asset identifiers must always be validated.**
-9. **No images or new visual assets are generated at runtime.**
-10. **User display booleans affect presentation, not the weather cache key.**
-11. **AI failures must not make factual weather data unavailable.**
-12. **Frontend components must not depend on the raw Open-Meteo or Ollama response structures.**
+The current `GET /api/weather/presentation` endpoint calls `AiWeatherPresentationService` directly during the HTTP request.
+
+Therefore, a queue worker is **not currently required for this synchronous endpoint**.
+
+`GenerateWeatherPresentationJob` is available for asynchronous AI Presentation processing.
+
+---
+
+# Caching
+
+Weather data and AI Presentation use separate caches.
+
+### Weather Cache
+
+Configured through:
+
+```dotenv
+WEATHER_CACHE_TTL=900
+```
+
+This cache stores factual weather data obtained from Open-Meteo.
+
+### AI Presentation Cache
+
+Configured through:
+
+```dotenv
+AI_PRESENTATION_CACHE_TTL=900
+```
+
+This cache stores the generated AI Presentation.
+
+Keeping these caches separate is intentional: changing or regenerating an AI presentation should not require another weather API request when the underlying weather data is still valid.
+
+---
+
+# Useful commands
+
+### Docker
+
+```bash
+./vendor/bin/sail up -d
+./vendor/bin/sail down
+./vendor/bin/sail restart
+./vendor/bin/sail ps
+./vendor/bin/sail logs
+```
+
+### Laravel
+
+```bash
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan migrate:status
+./vendor/bin/sail artisan config:clear
+./vendor/bin/sail artisan cache:clear
+./vendor/bin/sail artisan route:list
+```
+
+### Tests
+
+```bash
+./vendor/bin/sail artisan test
+```
+
+### Queue
+
+```bash
+./vendor/bin/sail artisan queue:work
+./vendor/bin/sail artisan queue:failed
+```
+
+### Shell
+
+```bash
+./vendor/bin/sail shell
+```
+
+---
+
+# API
+
+Main endpoints:
+
+```text
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+POST   /api/auth/logout
+
+GET    /api/weather
+POST   /api/weather/refresh
+GET    /api/weather/presentation
+
+GET    /api/weather-settings
+PUT    /api/weather-settings
+PATCH  /api/weather-settings
+```
+
+Weather and settings endpoints are protected by Laravel Sanctum.
+
+---
+
+# Project Structure
+
+```text
+app/
+├── DTO/
+│   ├── AI/
+│   └── Weather/
+├── Http/
+│   ├── Controllers/Api/
+│   ├── Requests/
+│   └── Resources/
+├── Infrastructure/
+│   └── Weather/
+└── Services/
+    ├── AI/
+    └── Weather/
+
+resources/
+├── js/
+└── css/
+
+routes/
+├── api.php
+└── web.php
+
+config/
+├── ai.php
+└── services.php
+
+compose.yaml
+.env.example
+```
+
+---

@@ -13,4 +13,40 @@ async function submit() { error.value = ''; loading.value = true; try { const re
 
 </script>
 
-<template><main class="public-page"><section class="public-shell"><div class="public-visual"><div class="public-brand"><img :src="logoUrl" :alt="t.appName"><div><strong>{{ t.appName }}</strong><span>{{ t.appDescription }}</span></div></div><div class="public-visual__copy"><span class="eyebrow">{{ t.weatherExperience }}</span><h1>{{ title }}</h1><p>{{ text }}</p></div><div class="public-visual__glow"></div></div><div class="public-form"><div class="public-form__top"><div><span class="eyebrow">{{ t.login }}</span><h2>{{ t.signIn }}</h2></div><div class="public-controls"><button type="button" class="icon-button" :aria-label="t.locale" @click="nextLocale">{{ locale.toUpperCase() }}</button><button type="button" class="icon-button" :aria-label="t.theme" @click="emit('theme-change', theme === 'dark' ? 'light' : 'dark')">{{ theme === 'dark' ? t.light : t.dark }}</button></div></div><form @submit.prevent="submit"><label><span>{{ t.email }}</span><input v-model.trim="form.email" type="email" autocomplete="username" required></label><label><span>{{ t.password }}</span><input v-model="form.password" type="password" autocomplete="current-password" required></label><p v-if="error" class="form-error">{{ error }}</p><button class="primary-button" type="submit" :disabled="loading">{{ loading ? t.signingIn : t.signIn }}</button></form></div></section></main></template>
+<template>
+    <main class="public-page">
+        <section class="public-shell">
+            <div class="public-visual">
+                <div class="public-brand">
+                    <img :src="logoUrl" :alt="t.appName">
+                    <div><strong>{{ t.appName }}</strong><span>{{ t.appDescription }}</span>
+                    </div>
+                </div>
+                <div class="public-visual__copy"><span class="eyebrow">{{ t.weatherExperience }}</span>
+                    <h1>{{ title }}</h1>
+                    <p>{{ text }}</p>
+                    </div>
+                    <div class="public-visual__glow">                        
+                    </div>
+                </div>
+                <div class="public-form">
+                    <div class="public-form__top">
+                        <div><span class="eyebrow">{{ t.login }}</span>
+                            <h2>{{ t.signIn }}</h2>
+                        </div>
+                    <div class="public-controls">
+                        <button type="button" class="icon-button" :aria-label="t.locale" @click="nextLocale">{{ locale.toUpperCase() }}</button>
+                        <button type="button" class="icon-button" :aria-label="t.theme" @click="emit('theme-change', theme === 'dark' ? 'light' : 'dark')">{{ theme === 'dark' ? t.light : t.dark }}</button>
+                </div></div>
+                        <form @submit.prevent="submit"><label>
+                                <span>{{ t.email }}</span>
+                                <input v-model.trim="form.email" type="email" autocomplete="username" required>
+                                </label><label><span>{{ t.password }}</span>
+                                <input v-model="form.password" type="password" autocomplete="current-password" required>
+                                </label><p v-if="error" class="form-error">{{ error }}</p>
+                                <button class="primary-button" type="submit" :disabled="loading">{{ loading ? t.signingIn : t.signIn }}</button>
+                        </form>
+                </div>
+        </section>
+    </main>
+</template>
